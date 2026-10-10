@@ -1,0 +1,65 @@
+@model ElCortijo.Dominio.Entidades.Usuario
+@{
+    ViewData["Title"] = "Registrar Usuario";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3 border-0">
+                <h4 class="fw-bold mb-0">Nuevo Usuario</h4>
+            </div>
+            <div class="card-body">
+                <form asp-action="Crear" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="NombreCompleto" class="form-label fw-semibold">Nombre Completo</label>
+                            <input asp-for="NombreCompleto" class="form-control" required />
+                            <span asp-validation-for="NombreCompleto" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="NombreUsuario" class="form-label fw-semibold">Nombre de Usuario</label>
+                            <input asp-for="NombreUsuario" class="form-control" required />
+                            <span asp-validation-for="NombreUsuario" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Correo" class="form-label fw-semibold">Correo Electrónico</label>
+                            <input asp-for="Correo" type="email" class="form-control" required />
+                            <span asp-validation-for="Correo" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="clave" class="form-label fw-semibold">Contraseña</label>
+                            <input name="clave" type="password" class="form-control" required minlength="6" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Telefono" class="form-label fw-semibold">Teléfono</label>
+                            <input asp-for="Telefono" class="form-control" />
+                            <span asp-validation-for="Telefono" class="text-danger small"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="IdRol" class="form-label fw-semibold">Rol Asignado</label>
+                            <select asp-for="IdRol" class="form-select" asp-items="ViewBag.Roles" required>
+                                <option value="">-- Seleccione un Rol --</option>
+                            </select>
+                            <span asp-validation-for="IdRol" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 text-end">
+                        <a asp-action="Index" class="btn btn-outline-secondary me-2">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-1"></i> Guardar Usuario
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
