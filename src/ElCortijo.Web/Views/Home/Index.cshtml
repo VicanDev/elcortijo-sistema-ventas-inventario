@@ -1,8 +1,159 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model ElCortijo.Web.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Panel de Control";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <p class="text-muted small fw-semibold text-uppercase mb-1">Ventas del Día</p>
+                <h4 class="fw-bold mb-0 text-dark">S/ @Model.TotalVentasHoy.ToString("N2")</h4>
+                <small class="text-success"><i class="bi bi-arrow-up-short"></i> @Model.CantidadVentasHoy pedidos hoy</small>
+            </div>
+            <div class="stat-icon success">
+                <i class="bi bi-cash-stack"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <p class="text-muted small fw-semibold text-uppercase mb-1">Transacciones</p>
+                <h4 class="fw-bold mb-0 text-dark">@Model.CantidadVentasHoy</h4>
+                <small class="text-muted">Operaciones confirmadas</small>
+            </div>
+            <div class="stat-icon primary">
+                <i class="bi bi-bag-check"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <p class="text-muted small fw-semibold text-uppercase mb-1">Catálogo Activo</p>
+                <h4 class="fw-bold mb-0 text-dark">@Model.TotalProductos</h4>
+                <small class="text-muted">Alimentos balanceados</small>
+            </div>
+            <div class="stat-icon info">
+                <i class="bi bi-boxes"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="stat-card">
+            <div>
+                <p class="text-muted small fw-semibold text-uppercase mb-1">Alertas de Stock</p>
+                <h4 class="fw-bold mb-0 @(Model.ProductosBajoStock > 0 ? "text-danger" : "text-dark")">@Model.ProductosBajoStock</h4>
+                <small class="text-danger">Por debajo del mínimo</small>
+            </div>
+            <div class="stat-icon warning">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-clock-history me-1 text-primary"></i> Últimas Operaciones Registradas
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Comprobante</th>
+                                <th>Cliente</th>
+                                <th>Total</th>
+                                <th>Método</th>
+                                <th>Fecha / Hora</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.UltimasVentas.Any())
+                            {
+                                @foreach (var v in Model.UltimasVentas)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">@v.NumeroComprobante</td>
+                                        <td>@v.Cliente.NombreRazonSocial</td>
+                                        <td class="fw-bold text-dark">S/ @v.Total.ToString("N2")</td>
+                                        <td><span class="badge bg-light text-dark border">@v.MetodoPago</span></td>
+                                        <td class="small text-muted">@v.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                        No hay ventas registradas aún en el sistema.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-shield-exclamation me-1 text-danger"></i> Alerta de Reposición de Stock
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Producto</th>
+                                <th class="text-center">Stock</th>
+                                <th class="text-center">Mínimo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.ListaProductosAlerta.Any())
+                            {
+                                @foreach (var p in Model.ListaProductosAlerta)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold small">@p.Nombre</div>
+                                            <span class="badge bg-light text-muted border" style="font-size: 0.7rem;">@p.Marca.Nombre</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-danger">@p.StockActual</span>
+                                        </td>
+                                        <td class="text-center text-muted small">@p.StockMinimo</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="3" class="text-center py-4 text-muted">
+                                        <i class="bi bi-check-circle-fill text-success fs-3 d-block mb-2"></i>
+                                        Todo el inventario se encuentra sobre el stock mínimo.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
