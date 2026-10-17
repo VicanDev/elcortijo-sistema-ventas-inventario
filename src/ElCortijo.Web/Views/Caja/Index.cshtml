@@ -1,0 +1,30 @@
+@model ElCortijo.Web.ViewModels.CajaViewModel
+@{
+    ViewData["Title"] = "Caja";
+}
+<div class="mb-3"><h2 class="fw-bold mb-1">Caja y arqueo</h2><p class="text-muted mb-0">Ventas incluidas: estado Completada y asociadas explícitamente a la caja.</p></div>
+@if (TempData["Mensaje"] is string mensaje) { <div class="alert alert-success">@mensaje</div> }
+@if (TempData["Error"] is string error) { <div class="alert alert-danger">@error</div> }
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+@if (Model.Panel.CajaAbierta is null)
+{
+    <div class="card border-0 shadow-sm mb-4"><div class="card-body"><h5 class="fw-bold">Abrir caja</h5><form asp-action="Abrir" method="post" class="row g-3 align-items-end"><div class="col-md-4"><label asp-for="MontoInicial" class="form-label">Fondo inicial (S/)</label><input asp-for="MontoInicial" class="form-control" type="number" min="0" step="0.01"/><span asp-validation-for="MontoInicial" class="text-danger small"></span></div><div class="col-md-3"><button type="submit" class="btn btn-primary"><i class="bi bi-unlock me-1"></i>Abrir caja</button></div></form></div></div>
+}
+else
+{
+    var caja = Model.Panel.CajaAbierta;
+    <div class="card border-0 shadow-sm mb-4"><div class="card-body"><div class="d-flex justify-content-between"><div><h5 class="fw-bold">Caja abierta #@caja.IdArqueo</h5><p class="text-muted">Apertura: @caja.FechaApertura.ToString("dd/MM/yyyy HH:mm")</p></div><span class="badge bg-success align-self-start">@caja.Estado</span></div>
+        <div class="row g-3 mb-4"><div class="col-md-3"><div class="p-3 bg-light rounded">Fondo inicial<br/><strong>S/ @caja.MontoInicial.ToString("N2")</strong></div></div><div class="col-md-3"><div class="p-3 bg-light rounded">Ventas en efectivo<br/><strong>S/ @Model.Panel.Ventas.Where(v => v.ClasificacionPago == "Efectivo").Sum(v => v.Total).ToString("N2")</strong></div></div><div class="col-md-3"><div class="p-3 bg-light rounded">Pagos digitales<br/><strong>S/ @Model.Panel.Ventas.Where(v => v.ClasificacionPago == "Digital").Sum(v => v.Total).ToString("N2")</strong></div></div><div class="col-md-3"><div class="p-3 bg-light rounded">Efectivo esperado<br/><strong>S/ @(caja.MontoInicial + Model.Panel.Ventas.Where(v => v.ClasificacionPago == "Efectivo").Sum(v => v.Total)).ToString("N2")</strong></div></div></div>
+        @if (Model.Panel.Ventas.Any(v => v.ClasificacionPago == "NoClasificado")) { <div class="alert alert-warning">Hay pagos con método no clasificado; no se suman a efectivo ni a digital. Coordina el catálogo con Edson. Total pendiente de clasificar: S/ @Model.Panel.Ventas.Where(v => v.ClasificacionPago == "NoClasificado").Sum(v => v.Total).ToString("N2").</div> }
+        <h6 class="fw-bold">Ventas asociadas</h6><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Fecha</th><th>Comprobante</th><th>Pago</th><th>Clasificación</th><th class="text-end">Total</th></tr></thead><tbody>
+        @if (!Model.Panel.Ventas.Any()) { <tr><td colspan="5" class="text-center text-muted">No hay ventas asociadas a esta caja.</td></tr> }
+        @foreach (var venta in Model.Panel.Ventas) { <tr><td>@venta.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</td><td>@venta.NumeroComprobante</td><td>@venta.MetodoPago</td><td>@venta.ClasificacionPago</td><td class="text-end">S/ @venta.Total.ToString("N2")</td></tr> }
+        </tbody></table></div>
+        <form asp-action="Cerrar" method="post" class="row g-3 align-items-end mt-2"><input type="hidden" name="idArqueo" value="@caja.IdArqueo"/><div class="col-md-4"><label asp-for="TotalReal" class="form-label">Efectivo contado al cierre (S/)</label><input asp-for="TotalReal" class="form-control" type="number" min="0" step="0.01"/><span asp-validation-for="TotalReal" class="text-danger small"></span></div><div class="col-md-3"><button type="submit" class="btn btn-danger" onclick="return confirm('¿Cerrar esta caja con el monto contado?')"><i class="bi bi-lock me-1"></i>Cerrar caja</button></div></form>
+    </div></div>
+}
+<div class="card border-0 shadow-sm"><div class="card-header bg-white"><h5 class="fw-bold mb-0">Historial de caja</h5></div><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Apertura</th><th>Cierre</th><th>Estado</th><th class="text-end">Inicial</th><th class="text-end">Efectivo</th><th class="text-end">Digital</th><th class="text-end">Esperado</th><th class="text-end">Real contado</th><th class="text-end">Diferencia</th></tr></thead><tbody>
+@if (!Model.Panel.Historial.Any()) { <tr><td colspan="9" class="text-center text-muted py-4">No hay aperturas registradas para tu usuario.</td></tr> }
+@foreach (var item in Model.Panel.Historial) { <tr><td>@item.FechaApertura.ToString("dd/MM/yyyy HH:mm")</td><td>@(item.FechaCierre?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td><td>@item.Estado</td><td class="text-end">S/ @item.MontoInicial.ToString("N2")</td><td class="text-end">S/ @item.TotalVentasEfectivo.ToString("N2")</td><td class="text-end">S/ @item.TotalVentasDigital.ToString("N2")</td><td class="text-end">S/ @item.TotalEsperado.ToString("N2")</td><td class="text-end">@(item.TotalReal.HasValue ? $"S/ {item.TotalReal.Value:N2}" : "-")</td><td class="text-end">@(item.Diferencia.HasValue ? $"S/ {item.Diferencia.Value:N2}" : "-")</td></tr> }
+</tbody></table></div><div class="card-body"><p class="small text-muted mb-0">Métodos asumidos: Efectivo; digitales: Yape, Plin, Tarjeta, Transferencia y Digital (sin distinguir crédito/débito). Los demás quedan sin clasificar. Efectivo esperado = fondo inicial + ventas completadas en efectivo; digital se informa por separado. Las ventas no se asignan aquí automáticamente.</p></div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

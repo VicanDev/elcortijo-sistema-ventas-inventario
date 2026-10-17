@@ -1,0 +1,43 @@
+@model ElCortijo.Web.ViewModels.ReportesViewModel
+@{
+    ViewData["Title"] = "Reportes";
+    var exportValues = new Dictionary<string, string?> { ["Desde"] = Model.Desde?.ToString("yyyy-MM-dd"), ["Hasta"] = Model.Hasta?.ToString("yyyy-MM-dd"), ["TipoReporte"] = Model.TipoReporte, ["EstadoVenta"] = Model.EstadoVenta, ["TipoComprobante"] = Model.TipoComprobante, ["MetodoPago"] = Model.MetodoPago, ["TipoMovimiento"] = Model.TipoMovimiento, ["IdProducto"] = Model.IdProducto?.ToString() };
+}
+<div class="mb-3"><h2 class="fw-bold mb-1">Reportes</h2><p class="text-muted mb-0">Consultas de SQL Server por medio de Entity Framework Core.</p></div>
+<form asp-action="Index" method="get" class="card card-body border-0 shadow-sm mb-4">
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <div class="row g-3 align-items-end">
+        <div class="col-md-2"><label asp-for="TipoReporte" class="form-label">Reporte</label><select asp-for="TipoReporte" class="form-select"><option value="Ventas">Ventas</option><option value="Movimientos">Movimientos de inventario</option></select></div>
+        <div class="col-md-2"><label asp-for="Desde" class="form-label">Desde</label><input asp-for="Desde" class="form-control" /></div>
+        <div class="col-md-2"><label asp-for="Hasta" class="form-label">Hasta</label><input asp-for="Hasta" class="form-control" /></div>
+        @if (Model.TipoReporte == "Movimientos")
+        {
+            <div class="col-md-2"><label asp-for="TipoMovimiento" class="form-label">Movimiento</label><select asp-for="TipoMovimiento" class="form-select"><option value="">Todos</option><option>Entrada</option><option>Salida</option><option>Ajuste</option></select></div>
+            <div class="col-md-2"><label asp-for="IdProducto" class="form-label">Id producto (opcional)</label><input asp-for="IdProducto" class="form-control" type="number" min="1" /></div>
+        }
+        else
+        {
+            <div class="col-md-2"><label asp-for="EstadoVenta" class="form-label">Estado</label><select asp-for="EstadoVenta" class="form-select"><option value="Completada">Completada</option><option value="Todos">Todos</option><option value="Anulada">Anulada</option></select></div>
+            <div class="col-md-2"><label asp-for="TipoComprobante" class="form-label">Comprobante</label><select asp-for="TipoComprobante" class="form-select"><option value="">Todos</option><option>Boleta</option><option>Factura</option></select></div>
+            <div class="col-md-2"><label asp-for="MetodoPago" class="form-label">Método de pago</label><input asp-for="MetodoPago" class="form-control" maxlength="50" placeholder="Todos" /></div>
+        }
+        <div class="col-md-2"><button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Consultar</button></div>
+    </div>
+</form>
+<div class="d-flex gap-2 mb-3"><a asp-action="ExportarExcel" asp-all-route-data="exportValues" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel me-1"></i>Exportar Excel</a><a asp-action="ExportarPdf" asp-all-route-data="exportValues" class="btn btn-outline-danger"><i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF</a></div>
+@if (Model.Ventas is not null)
+{
+    <div class="row g-3 mb-3"><div class="col-md-4"><div class="card card-body border-0 shadow-sm">Ventas completadas <strong>@Model.Ventas.CantidadVentas</strong></div></div><div class="col-md-4"><div class="card card-body border-0 shadow-sm">IGV registrado <strong>S/ @Model.Ventas.TotalIgvCompletadas.ToString("N2")</strong></div></div><div class="col-md-4"><div class="card card-body border-0 shadow-sm">Total completadas <strong>S/ @Model.Ventas.TotalVentasCompletadas.ToString("N2")</strong></div></div></div>
+    <div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Fecha</th><th>Comprobante</th><th>Tipo</th><th>Cliente</th><th>Pago</th><th>Estado</th><th class="text-end">Subtotal</th><th class="text-end">IGV</th><th class="text-end">Total</th></tr></thead><tbody>
+    @if (!Model.Ventas.Filas.Any()) { <tr><td colspan="9" class="text-center text-muted py-4">No hay ventas para este periodo y filtros.</td></tr> }
+    @foreach (var v in Model.Ventas.Filas) { <tr><td>@v.Fecha.ToString("dd/MM/yyyy HH:mm")</td><td>@v.NumeroComprobante</td><td>@v.TipoComprobante</td><td>@v.Cliente</td><td>@v.MetodoPago</td><td>@v.Estado</td><td class="text-end">S/ @v.SubTotal.ToString("N2")</td><td class="text-end">S/ @v.Igv.ToString("N2")</td><td class="text-end">S/ @v.Total.ToString("N2")</td></tr> }
+    </tbody></table></div><div class="card-body small text-muted">Los importes son los persistidos en las ventas; los resúmenes suman únicamente ventas Completadas. El IGV no se recalcula.</div></div>
+}
+@if (Model.Movimientos is not null)
+{
+    <div class="row g-3 mb-3"><div class="col-md-4"><div class="card card-body border-0 shadow-sm">Movimientos <strong>@Model.Movimientos.CantidadMovimientos</strong></div></div><div class="col-md-4"><div class="card card-body border-0 shadow-sm">Unidades de entrada <strong>@Model.Movimientos.TotalUnidadesEntrada</strong></div></div><div class="col-md-4"><div class="card card-body border-0 shadow-sm">Unidades de salida <strong>@Model.Movimientos.TotalUnidadesSalida</strong></div></div></div>
+    <div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Fecha</th><th>Producto</th><th>Código</th><th>Tipo</th><th>Cantidad</th><th>Stock anterior</th><th>Stock posterior</th><th>Motivo</th><th>Usuario</th></tr></thead><tbody>
+    @if (!Model.Movimientos.Filas.Any()) { <tr><td colspan="9" class="text-center text-muted py-4">No hay movimientos para este periodo y filtros.</td></tr> }
+    @foreach (var m in Model.Movimientos.Filas) { <tr><td>@m.Fecha.ToString("dd/MM/yyyy HH:mm")</td><td>@m.Producto</td><td>@m.CodigoProducto</td><td>@m.TipoMovimiento</td><td>@m.Cantidad</td><td>@m.StockAnterior</td><td>@m.StockPosterior</td><td>@m.Motivo</td><td>@m.Usuario</td></tr> }
+    </tbody></table></div></div>
+}

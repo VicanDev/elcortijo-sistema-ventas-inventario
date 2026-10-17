@@ -1,0 +1,11 @@
+@model ElCortijo.Dominio.DTOs.ComprobanteDto
+@{
+    Layout = null;
+    ViewData["Title"] = "Imprimir comprobante";
+}
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>@Model.TipoComprobante @Model.NumeroComprobante - El Cortijo</title><link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css"/><style>@@page{size:A4;margin:15mm}body{color:#111}.toolbar{margin:1rem auto;max-width:900px}@@media print{.toolbar{display:none}}</style></head><body>
+<div class="toolbar d-flex gap-2"><button class="btn btn-primary" onclick="window.print()">Imprimir</button><a class="btn btn-outline-secondary" href="@Url.Action("Detalle", new { id = Model.IdVenta })">Volver</a></div>
+<main class="container py-3" style="max-width:900px"><div class="d-flex justify-content-between"><div><h2 class="fw-bold">EL CORTIJO</h2><div>Representación impresa de comprobante registrado</div></div><div class="text-end"><h4>@Model.TipoComprobante</h4><strong>@Model.NumeroComprobante</strong><div>@Model.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</div></div></div><hr/>
+<p><strong>Cliente:</strong> @(Model.ClienteNombre ?? "Datos de cliente no disponibles")<br/><strong>Documento:</strong> @(Model.ClienteTipoDocumento ?? "-") @(Model.ClienteNumeroDocumento ?? "-")<br/><strong>Dirección:</strong> @(Model.ClienteDireccion ?? "-")</p>
+<table class="table table-sm"><thead><tr><th>Producto</th><th class="text-end">Cant.</th><th class="text-end">Precio unitario</th><th class="text-end">Subtotal</th></tr></thead><tbody>@foreach(var item in Model.Detalles){<tr><td>@item.Producto</td><td class="text-end">@item.Cantidad</td><td class="text-end">S/ @item.PrecioUnitario.ToString("N2")</td><td class="text-end">S/ @item.SubTotal.ToString("N2")</td></tr>}</tbody></table>
+<div class="text-end"><div>Subtotal registrado: S/ @Model.SubTotal.ToString("N2")</div><div>IGV registrado (referencia 18%): S/ @Model.Igv.ToString("N2")</div><h5>Total registrado: S/ @Model.Total.ToString("N2")</h5></div><p class="small text-muted mt-4">Importes históricos de la venta; documento no validado por SUNAT.</p></main></body></html>
