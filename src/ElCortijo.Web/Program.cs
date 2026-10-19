@@ -13,6 +13,8 @@ builder.Services.AddDbContext<ElCortijoDbContext>(options =>
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
+builder.Services.AddScoped<IVentaService, VentaService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
