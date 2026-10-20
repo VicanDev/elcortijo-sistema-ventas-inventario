@@ -1,0 +1,50 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "El Cortijo - consulta de productos",
+    "description": "Consulta pública de precio y stock para IBM watsonx Assistant.",
+    "version": "1.0.0"
+  },
+  "servers": [{ "url": "https://REEMPLAZAR-DOMINIO-PUBLICO" }],
+  "paths": {
+    "/api/chatbot/productos": {
+      "get": {
+        "operationId": "consultarProductos",
+        "summary": "Busca alimentos por nombre o código",
+        "parameters": [{
+          "name": "buscar", "in": "query", "required": true,
+          "description": "Nombre o código del alimento",
+          "schema": { "type": "string", "minLength": 1 }
+        }],
+        "responses": {
+          "200": {
+            "description": "Resultado de la búsqueda",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResultadoProductos" } } }
+          },
+          "400": { "description": "La búsqueda está vacía" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ResultadoProductos": {
+        "type": "object",
+        "properties": {
+          "consulta": { "type": "string" },
+          "encontrados": { "type": "integer" },
+          "productos": { "type": "array", "items": { "$ref": "#/components/schemas/Producto" } }
+        }
+      },
+      "Producto": {
+        "type": "object",
+        "properties": {
+          "codigo": { "type": "string" }, "nombre": { "type": "string" },
+          "precio": { "type": "number", "format": "decimal" },
+          "stock": { "type": "integer" }, "unidadMedida": { "type": "string" },
+          "disponible": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

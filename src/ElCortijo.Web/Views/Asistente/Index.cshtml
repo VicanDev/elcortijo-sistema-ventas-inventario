@@ -1,0 +1,100 @@
+@using System.Text.Json
+@inject IConfiguration Configuration
+@{
+    Layout = null;
+    ViewData["Title"] = "Asistente de productos | El Cortijo";
+    var watsonEnabled = Configuration.GetValue<bool>("WatsonAssistant:Enabled");
+    var integrationId = Configuration["WatsonAssistant:IntegrationId"];
+    var region = Configuration["WatsonAssistant:Region"];
+    var serviceInstanceId = Configuration["WatsonAssistant:ServiceInstanceId"];
+    var watsonConfigured = watsonEnabled
+        && !string.IsNullOrWhiteSpace(integrationId)
+        && !string.IsNullOrWhiteSpace(region)
+        && !string.IsNullOrWhiteSpace(serviceInstanceId);
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/chatbot.css" asp-append-version="true" />
+</head>
+<body class="cortijo-assistant-page">
+    @if (watsonConfigured)
+    {
+        <main class="cortijo-assistant-shell cortijo-assistant-shell--watson">
+            <a class="cortijo-assistant-back" href="/Home"><i class="bi bi-arrow-left"></i> Volver a El Cortijo</a>
+            <section class="cortijo-assistant-card cortijo-assistant-card--watson" aria-label="Asistente Watson de El Cortijo">
+                <header class="cortijo-assistant-header">
+                    <span class="cortijo-assistant-avatar"><i class="bi bi-robot"></i></span>
+                    <div>
+                        <h1>Asistente El Cortijo</h1>
+                        <p><span></span> IBM Watson Assistant &middot; Consultas de stock y precios</p>
+                    </div>
+                </header>
+                <div id="WatsonAssistantContainer" class="cortijo-watson-host" aria-label="Conversaci&oacute;n con el asistente"></div>
+            </section>
+        </main>
+        <script>
+            window.watsonAssistantChatOptions = {
+                integrationID: @Html.Raw(JsonSerializer.Serialize(integrationId)),
+                region: @Html.Raw(JsonSerializer.Serialize(region)),
+                serviceInstanceID: @Html.Raw(JsonSerializer.Serialize(serviceInstanceId)),
+                element: document.getElementById('WatsonAssistantContainer'),
+                showLauncher: false,
+                openChatByDefault: true,
+                hideCloseButton: true,
+                onLoad: async function (instance) { await instance.render(); }
+            };
+            setTimeout(function () {
+                const script = document.createElement('script');
+                script.src = 'https://web-chat.global.assistant.watson.appdomain.cloud/versions/' +
+                    (window.watsonAssistantChatOptions.clientVersion || 'latest') +
+                    '/WatsonAssistantChatEntry.js';
+                document.head.appendChild(script);
+            });
+        </script>
+    }
+    else
+    {
+    <main class="cortijo-assistant-shell" data-chatbot>
+        <a class="cortijo-assistant-back" href="/Home"><i class="bi bi-arrow-left"></i> Volver a El Cortijo</a>
+        <section class="cortijo-assistant-card" aria-label="Asistente de productos El Cortijo">
+            <header class="cortijo-assistant-header">
+                <span class="cortijo-assistant-avatar"><i class="bi bi-robot"></i></span>
+                <div>
+                    <h1>Asistente El Cortijo</h1>
+                    <p><span></span> En l&iacute;nea &middot; Consultas de stock y precios</p>
+                </div>
+            </header>
+            <div class="cortijo-chat__messages cortijo-assistant-messages" data-chat-messages aria-live="polite">
+                <div class="cortijo-chat__message cortijo-chat__message--bot">&iexcl;Hola! Puedo ayudarte a consultar el precio y stock de los alimentos. Escribe el nombre o c&oacute;digo del producto.</div>
+                <section class="cortijo-assistant-tools" aria-label="Opciones de consulta">
+                    <div class="cortijo-assistant-tools__top">
+                        <strong>Elige qu&eacute; deseas consultar</strong>
+                        <div class="cortijo-assistant-tools__actions">
+                            <button type="button" data-chat-catalog><i class="bi bi-grid"></i> Ver productos</button>
+                            <button type="button" data-chat-stock><i class="bi bi-box-seam"></i> Consultar stock</button>
+                        </div>
+                    </div>
+                    <div class="cortijo-chat__suggestions cortijo-assistant-suggestions" data-chat-suggestions aria-label="Filtrar por marca" hidden>
+                        <span data-chat-brand-label>Elige una marca</span>
+                        <span class="cortijo-assistant-brands-loading">Cargando marcas...</span>
+                    </div>
+                </section>
+            </div>
+            <form class="cortijo-chat__form cortijo-assistant-form" data-chat-form>
+                <label class="visually-hidden" for="cortijoChatInput">Nombre o c&oacute;digo del producto</label>
+                <input id="cortijoChatInput" data-chat-input type="text" maxlength="120" autocomplete="off" placeholder="Escribe tu consulta..." />
+                <button type="submit" aria-label="Enviar consulta"><i class="bi bi-send-fill"></i></button>
+            </form>
+            <footer class="cortijo-assistant-footnote"><i class="bi bi-shield-check"></i> Respuestas basadas en el cat&aacute;logo actual de El Cortijo</footer>
+        </section>
+    </main>
+    <script src="~/js/chatbot.js" asp-append-version="true"></script>
+    }
+</body>
+</html>
