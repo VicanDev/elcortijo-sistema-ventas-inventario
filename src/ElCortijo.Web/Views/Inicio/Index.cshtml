@@ -1,0 +1,229 @@
+@model ElCortijo.Web.ViewModels.LandingViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "El Cortijo | Alimentos para mascotas";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="El Cortijo: catálogo de alimentos para perros y gatos con precios y stock actualizado." />
+    <title>@ViewData["Title"]</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/landing.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/chatbot.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="landing-header" id="header">
+        <div class="landing-container nav-wrap">
+            <a class="landing-brand" href="#inicio" aria-label="El Cortijo, inicio">
+                <span class="brand-mark"><i class="bi bi-box-seam-fill"></i></span>
+                <span>El Cortijo<small>Alimentos para mascotas</small></span>
+            </a>
+
+            <button class="menu-toggle" id="menuToggle" type="button" aria-label="Abrir menú" aria-expanded="false">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <nav class="landing-nav" id="landingNav" aria-label="Navegación principal">
+                <a href="#inicio">Inicio</a>
+                <a href="#catalogo">Catálogo</a>
+                <a href="#beneficios">Beneficios</a>
+                <a href="#nosotros">Nosotros</a>
+                <a class="nav-login" asp-controller="Auth" asp-action="Login">
+                    <i class="bi bi-person-circle"></i> Ingresar al sistema
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero" id="inicio">
+            <div class="hero-glow hero-glow-one"></div>
+            <div class="hero-glow hero-glow-two"></div>
+            <div class="landing-container hero-grid">
+                <div class="hero-copy">
+                    <span class="eyebrow"><i class="bi bi-heart-fill"></i> Bienestar que empieza con una buena alimentación</span>
+                    <h1>Alimento de calidad para <em>cada etapa</em> de su vida.</h1>
+                    <p>Encuentra opciones para perros y gatos de marcas reconocidas, con precios claros y disponibilidad actualizada desde nuestro inventario.</p>
+                    <div class="hero-actions">
+                        <a class="btn-primary-landing" href="#catalogo">
+                            Ver catálogo <i class="bi bi-arrow-down"></i>
+                        </a>
+                        <a class="btn-secondary-landing" asp-controller="Auth" asp-action="Login">
+                            <i class="bi bi-grid-1x2-fill"></i> Acceso del personal
+                        </a>
+                    </div>
+                    <div class="hero-points">
+                        <span><i class="bi bi-check-circle-fill"></i> Perros y gatos</span>
+                        <span><i class="bi bi-check-circle-fill"></i> Stock en tiempo real</span>
+                        <span><i class="bi bi-check-circle-fill"></i> Precios visibles</span>
+                    </div>
+                </div>
+
+                <div class="hero-visual">
+                    <div class="hero-photo">
+                        <img src="~/images/landing/hero.jpg" alt="Perro feliz acompañado por su cuidadora" />
+                    </div>
+                    <div class="floating-card stock-card">
+                        <span class="floating-icon"><i class="bi bi-box2-heart-fill"></i></span>
+                        <div><strong>@Model.TotalProductos productos</strong><small>Catálogo activo</small></div>
+                    </div>
+                    <div class="floating-card care-card">
+                        <i class="bi bi-stars"></i>
+                        <span>Nutrición y cariño</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="metrics" aria-label="Resumen del catálogo">
+            <div class="landing-container metrics-grid">
+                <div><strong>@Model.TotalProductos</strong><span>Alimentos disponibles</span></div>
+                <div><strong>@Model.TotalCategorias</strong><span>Categorías especializadas</span></div>
+                <div><strong>@Model.TotalMarcas</strong><span>Marcas en catálogo</span></div>
+                <div><strong>100%</strong><span>Stock conectado al sistema</span></div>
+            </div>
+        </section>
+
+        <section class="catalog-section" id="catalogo">
+            <div class="landing-container">
+                <div class="section-heading">
+                    <span class="section-kicker">Catálogo destacado</span>
+                    <h2>Opciones para nutrirlos mejor</h2>
+                    <p>Una selección tomada directamente del inventario de El Cortijo.</p>
+                </div>
+
+                <div class="product-grid">
+                    @foreach (var producto in Model.ProductosDestacados)
+                    {
+                        var imagenProducto = producto.Codigo switch
+                        {
+                            "PROD-001" => "ricocan-adulto-15kg.jpg",
+                            "PROD-002" => "ricocan-cachorro-15kg.jpg",
+                            "PROD-003" => "mimaskot-adulto-15kg.webp",
+                            "PROD-004" => "mimaskot-cachorro-3kg.jpg",
+                            "PROD-005" => "canbo-adulto-15kg.jpg",
+                            "PROD-006" => "canbo-salmon-15kg.jpg",
+                            _ => null
+                        };
+                        <article class="product-card">
+                            <div class="product-visual">
+                                <span class="product-code">@producto.Codigo</span>
+                                @if (imagenProducto is not null)
+                                {
+                                    <img class="product-photo" src="~/images/productos/@imagenProducto" alt="Empaque de @producto.Nombre" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <div class="product-pack @(producto.Categoria.Nombre.Contains("Gato", StringComparison.OrdinalIgnoreCase) || producto.Nombre.Contains("Cat", StringComparison.OrdinalIgnoreCase) || producto.Nombre.Contains("Gato", StringComparison.OrdinalIgnoreCase) ? "product-pack--cat" : "product-pack--dog")" aria-label="Ilustración del alimento @producto.Nombre" role="img">
+                                        <span class="pack-brand">@producto.Marca.Nombre</span>
+                                        <i class="bi @(producto.Categoria.Nombre.Contains("Gato", StringComparison.OrdinalIgnoreCase) || producto.Nombre.Contains("Cat", StringComparison.OrdinalIgnoreCase) || producto.Nombre.Contains("Gato", StringComparison.OrdinalIgnoreCase) ? "bi-emoji-heart-eyes-fill" : "bi-emoji-smile-fill")"></i>
+                                        <span class="pack-food">ALIMENTO<br />@(producto.Categoria.Nombre.Contains("Gato", StringComparison.OrdinalIgnoreCase) || producto.Nombre.Contains("Cat", StringComparison.OrdinalIgnoreCase) || producto.Nombre.Contains("Gato", StringComparison.OrdinalIgnoreCase) ? "PARA GATOS" : "PARA PERROS")</span>
+                                        <span class="pack-flavor"><i class="bi bi-stars"></i> Nutrición completa</span>
+                                    </div>
+                                }
+                                <span class="product-category">@producto.Categoria.Nombre</span>
+                            </div>
+                            <div class="product-body">
+                                <span class="product-brand">@producto.Marca.Nombre</span>
+                                <h3>@producto.Nombre</h3>
+                                <p>@producto.UnidadMedida</p>
+                                <div class="product-meta">
+                                    <strong>S/ @producto.PrecioVenta.ToString("N2")</strong>
+                                    <span class="@(producto.StockActual <= producto.StockMinimo ? "stock-low" : "stock-ok")">
+                                        <i class="bi bi-circle-fill"></i> @producto.StockActual en stock
+                                    </span>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                </div>
+
+                <div class="catalog-note">
+                    <i class="bi bi-chat-heart-fill"></i>
+                    <div>
+                        <strong>¿Buscas un producto específico?</strong>
+                        <span>Nuestro asistente virtual podrá ayudarte a consultar precio y stock.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="benefits-section" id="beneficios">
+            <div class="landing-container">
+                <div class="section-heading center">
+                    <span class="section-kicker">Una compra más sencilla</span>
+                    <h2>Información clara para decidir mejor</h2>
+                </div>
+                <div class="benefits-grid">
+                    <article>
+                        <span><i class="bi bi-bag-heart-fill"></i></span>
+                        <h3>Variedad especializada</h3>
+                        <p>Alimentos secos, húmedos y snacks para perros y gatos en distintas etapas.</p>
+                    </article>
+                    <article>
+                        <span><i class="bi bi-boxes"></i></span>
+                        <h3>Disponibilidad real</h3>
+                        <p>El catálogo se alimenta de la misma base usada para gestionar las ventas y el inventario.</p>
+                    </article>
+                    <article>
+                        <span><i class="bi bi-shield-check"></i></span>
+                        <h3>Operación ordenada</h3>
+                        <p>Cada venta descuenta existencias y deja trazabilidad para mantener el stock bajo control.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="about-section" id="nosotros">
+            <div class="landing-container about-grid">
+                <div class="about-photo">
+                    <img src="~/images/landing/about.jpg" alt="Persona compartiendo con su mascota" loading="lazy" />
+                    <div class="about-badge"><i class="bi bi-heart-fill"></i> Cuidamos lo que más quieres</div>
+                </div>
+                <div class="about-copy">
+                    <span class="section-kicker">Sobre El Cortijo</span>
+                    <h2>Una distribuidora enfocada en el bienestar de las mascotas</h2>
+                    <p>El Cortijo reúne alimentos para perros y gatos en un catálogo organizado, mientras su sistema interno conecta clientes, ventas e inventario para ofrecer información confiable.</p>
+                    <ul>
+                        <li><i class="bi bi-check2-circle"></i> Marcas y presentaciones para diferentes necesidades.</li>
+                        <li><i class="bi bi-check2-circle"></i> Control de precios, existencias y movimientos.</li>
+                        <li><i class="bi bi-check2-circle"></i> Atención respaldada por un sistema centralizado.</li>
+                    </ul>
+                    <a class="text-link" asp-controller="Auth" asp-action="Login">Ir al sistema administrativo <i class="bi bi-arrow-right"></i></a>
+                </div>
+            </div>
+        </section>
+
+        <section class="final-cta">
+            <div class="landing-container cta-card">
+                <div>
+                    <span>Gestión El Cortijo</span>
+                    <h2>Ventas e inventario, conectados en un solo lugar.</h2>
+                    <p>Accede al panel para registrar operaciones y mantener actualizado el catálogo.</p>
+                </div>
+                <a asp-controller="Auth" asp-action="Login">Ingresar al sistema <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="landing-footer">
+        <div class="landing-container footer-grid">
+            <a class="landing-brand footer-brand" href="#inicio">
+                <span class="brand-mark"><i class="bi bi-box-seam-fill"></i></span>
+                <span>El Cortijo<small>Ventas &amp; Inventario</small></span>
+            </a>
+            <p>Alimentos para mascotas con información de precios y stock conectada.</p>
+            <span>© @DateTime.Now.Year El Cortijo · EFSRT V Cibertec</span>
+        </div>
+    </footer>
+
+    <partial name="_WatsonAssistant" />
+    <script src="~/js/landing.js" asp-append-version="true"></script>
+</body>
+</html>

@@ -17,7 +17,7 @@ La aplicación incluye el widget web y un endpoint que consulta precio y stock e
 4. En la acción agrega **Call an extension**, selecciona `consultarProductos` y asigna `buscar` a `producto`.
 5. Muestra `productos[0].nombre`, `productos[0].precio`, `productos[0].stock` y `productos[0].unidadMedida`. Si `encontrados` es `0`, solicita otro nombre.
 
-La API es `GET /api/chatbot/productos?buscar=Ricocan` y devuelve como máximo 50 productos activos. Nunca expone precio de compra ni datos privados.
+La API es `GET /api/chatbot/productos?buscar=Ricocan` y devuelve como máximo cinco productos activos. Nunca expone precio de compra ni datos privados.
 
 ## 3. Activar el widget
 

@@ -1,13 +1,261 @@
 @model ElCortijo.Dominio.DTOs.VentaRegistroViewModel
 @using ElCortijo.Dominio.Entidades
-@{ ViewData["Title"] = "Nueva venta"; var productos = (IEnumerable<Producto>)ViewBag.Productos; }
-<div class="d-flex justify-content-between align-items-center mb-4"><div><h2 class="fw-bold mb-1">Armar pedido</h2><p class="text-muted small mb-0">El stock se descuenta al confirmar la venta.</p></div><a asp-action="Index" class="btn btn-outline-secondary">Volver</a></div>
-<form asp-action="Crear" method="post"><div asp-validation-summary="ModelOnly" class="alert alert-danger"></div><div class="row g-4"><div class="col-lg-8"><div class="card border-0 shadow-sm"><div class="card-body"><h5 class="fw-bold">Productos</h5><div class="row g-2 mb-3"><div class="col-md-8"><select id="producto" class="form-select"><option value="">Seleccione un producto</option>@foreach (var p in productos) { <option value="@p.IdProducto" data-nombre="@p.Nombre" data-precio="@p.PrecioVenta" data-stock="@p.StockActual">@p.Nombre — S/ @p.PrecioVenta.ToString("N2") (Stock: @p.StockActual)</option>}</select></div><div class="col-md-2"><input id="cantidad" type="number" min="1" value="1" class="form-control" /></div><div class="col-md-2"><button id="agregar" type="button" class="btn btn-outline-primary w-100">Agregar</button></div></div><div class="table-responsive"><table class="table"><thead><tr><th>Producto</th><th>Precio</th><th>Cant.</th><th class="text-end">Subtotal</th><th></th></tr></thead><tbody id="carrito"><tr id="vacio"><td colspan="5" class="text-center text-muted py-4">Aún no hay productos en el pedido.</td></tr></tbody></table></div></div></div></div>
-<div class="col-lg-4"><div class="card border-0 shadow-sm"><div class="card-body"><h5 class="fw-bold mb-3">Datos de venta</h5><label asp-for="IdCliente" class="form-label">Cliente</label><select asp-for="IdCliente" asp-items="ViewBag.Clientes" class="form-select mb-3"><option value="">Seleccione un cliente</option></select><label asp-for="TipoComprobante" class="form-label">Comprobante</label><select asp-for="TipoComprobante" class="form-select mb-3"><option>Boleta</option><option>Factura</option></select><label asp-for="MetodoPago" class="form-label">Método de pago</label><select asp-for="MetodoPago" class="form-select mb-3" id="metodoPago"><option>Efectivo</option><option>Yape/Plin</option><option>Tarjeta</option><option>Transferencia</option></select><div id="recibidoGrupo"><label asp-for="MontoRecibido" class="form-label">Monto recibido</label><input asp-for="MontoRecibido" class="form-control mb-3" type="number" min="0" step="0.01" /></div><div class="border-top pt-3 d-flex justify-content-between"><span class="fw-bold">Total</span><span id="total" class="fw-bold fs-5">S/ 0.00</span></div><button class="btn btn-primary w-100 mt-4"><i class="bi bi-check-circle me-1"></i> Confirmar venta</button></div></div></div></div></form>
-@section Scripts { <partial name="_ValidationScriptsPartial" /><script>
-const carrito = [], tbody = document.getElementById('carrito');
-function render() { tbody.innerHTML = carrito.length ? carrito.map((i,n) => `<tr><td>${i.nombre}<input type="hidden" name="Items[${n}].IdProducto" value="${i.id}"></td><td>S/ ${i.precio.toFixed(2)}</td><td>${i.cantidad}<input type="hidden" name="Items[${n}].Cantidad" value="${i.cantidad}"></td><td class="text-end">S/ ${(i.precio*i.cantidad).toFixed(2)}</td><td><button type="button" class="btn btn-sm btn-outline-danger" onclick="quitar(${n})"><i class="bi bi-trash"></i></button></td></tr>`).join('') : '<tr><td colspan="5" class="text-center text-muted py-4">Aún no hay productos en el pedido.</td></tr>'; document.getElementById('total').textContent = 'S/ ' + carrito.reduce((s,i)=>s+i.precio*i.cantidad,0).toFixed(2); }
-function quitar(n) { carrito.splice(n,1); render(); } window.quitar = quitar;
-document.getElementById('agregar').onclick = () => { const s=document.getElementById('producto'), o=s.selectedOptions[0], c=Number(document.getElementById('cantidad').value); if (!s.value || !Number.isInteger(c) || c < 1) return; const exist=carrito.find(i=>i.id==s.value); if ((exist?exist.cantidad:0)+c > Number(o.dataset.stock)) { alert('La cantidad supera el stock disponible.'); return; } if(exist) exist.cantidad+=c; else carrito.push({id:s.value,nombre:o.dataset.nombre,precio:Number(o.dataset.precio),cantidad:c}); render(); };
-document.getElementById('metodoPago').onchange = e => { document.getElementById('recibidoGrupo').style.display = e.target.value === 'Efectivo' ? 'block' : 'none'; }; render();
-</script> }
+@using System.Globalization
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Nueva venta";
+    var productos = (IEnumerable<Producto>)ViewBag.Productos;
+    var clientes = (IEnumerable<Cliente>)ViewBag.Clientes;
+    var clienteActual = clientes.FirstOrDefault(c => c.IdCliente == Model.IdCliente);
+    var clientesJson = JsonSerializer.Serialize(clientes.Select(c => new { id = c.IdCliente, nombre = c.NombreRazonSocial, documento = c.NumeroDocumento }));
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Armar pedido</h2>
+        <p class="text-muted small mb-0">El stock se descuenta al confirmar la venta.</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">Volver</a>
+</div>
+
+<form asp-action="Crear" method="post" id="ventaForm">
+    <div asp-validation-summary="All" class="alert alert-danger @(ViewData.ModelState.IsValid ? "d-none" : "")"></div>
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold">Productos</h5>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-8">
+                            <select id="producto" class="form-select">
+                                <option value="">Seleccione un producto</option>
+                                @foreach (var p in productos)
+                                {
+                                    <option value="@p.IdProducto" data-nombre="@p.Nombre" data-precio="@p.PrecioVenta.ToString(CultureInfo.InvariantCulture)" data-stock="@p.StockActual">
+                                        @p.Nombre — S/ @p.PrecioVenta.ToString("N2") (Stock: @p.StockActual)
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2"><input id="cantidad" type="number" min="1" value="1" class="form-control" /></div>
+                        <div class="col-md-2"><button id="agregar" type="button" class="btn btn-outline-primary w-100">Agregar</button></div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead><tr><th>Producto</th><th>Precio</th><th>Cant.</th><th class="text-end">Subtotal</th><th></th></tr></thead>
+                            <tbody id="carrito"><tr><td colspan="5" class="text-center text-muted py-4">Aún no hay productos en el pedido.</td></tr></tbody>
+                        </table>
+                    </div>
+                    <div id="itemsPedido"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3">Datos de venta</h5>
+                    <label for="buscarCliente" class="form-label">Cliente</label>
+                    <div class="position-relative mb-1">
+                        <input asp-for="NombreClienteManual" id="buscarCliente" class="form-control" autocomplete="off" placeholder="Escribe nombre o documento..." value="@(Model.NombreClienteManual ?? (clienteActual is null ? "" : $"{clienteActual.NombreRazonSocial} ({clienteActual.NumeroDocumento})"))" aria-describedby="ayudaCliente" aria-controls="resultadosCliente" />
+                        <input asp-for="IdCliente" type="hidden" value="0" />
+                        <div id="resultadosCliente" class="list-group position-absolute top-100 start-0 w-100 shadow" style="z-index:1050; max-height:240px; overflow-y:auto; display:none"></div>
+                    </div>
+                    <small id="ayudaCliente" class="text-muted d-block mb-3">Escribe un nombre; en boletas, si es nuevo se registrará automáticamente.</small>
+                    <label asp-for="TipoComprobante" class="form-label">Comprobante</label>
+                    <select asp-for="TipoComprobante" class="form-select mb-3"><option>Boleta</option><option>Factura</option></select>
+                    <label asp-for="MetodoPago" class="form-label">Método de pago</label>
+                    <select asp-for="MetodoPago" class="form-select mb-3" id="metodoPago"><option>Efectivo</option><option>Yape/Plin</option><option>Tarjeta</option><option>Transferencia</option></select>
+                    <div id="recibidoGrupo">
+                        <label asp-for="MontoRecibido" class="form-label">Monto recibido</label>
+                        <input asp-for="MontoRecibido" class="form-control mb-3" type="number" min="0" step="0.01" />
+                    </div>
+                    <div class="border-top pt-3 mt-2">
+                        <div class="d-flex justify-content-between text-muted small mb-1"><span>Subtotal</span><span id="subtotal">S/ 0.00</span></div>
+                        <div class="d-flex justify-content-between text-muted small mb-2"><span>IGV (18%)</span><span id="igv">S/ 0.00</span></div>
+                        <div class="d-flex justify-content-between"><span class="fw-bold">Total a pagar</span><span id="total" class="fw-bold fs-5">S/ 0.00</span></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 mt-4"><i class="bi bi-check-circle me-1"></i> Confirmar venta</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (() => {
+            const carrito = [];
+            const tbody = document.getElementById('carrito');
+            const itemsPedido = document.getElementById('itemsPedido');
+            const form = document.getElementById('ventaForm');
+            const clientes = @Html.Raw(clientesJson);
+            const buscarCliente = document.getElementById('buscarCliente');
+            const idCliente = document.getElementById('IdCliente');
+            const resultadosCliente = document.getElementById('resultadosCliente');
+            if (idCliente.value.trim() === '') idCliente.value = '0';
+            const montoRecibido = document.getElementById('MontoRecibido');
+            let montoEditado = false;
+
+            const normalizar = texto => texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase();
+
+            function seleccionarCoincidenciaExacta() {
+                const termino = normalizar(buscarCliente.value);
+                const exactos = clientes.filter(c => normalizar(c.nombre) === termino
+                    || normalizar(c.documento) === termino
+                    || normalizar(`${c.nombre} (${c.documento})`) === termino);
+                if (exactos.length !== 1) return false;
+                const cliente = exactos[0];
+                idCliente.value = cliente.id;
+                buscarCliente.value = `${cliente.nombre} (${cliente.documento})`;
+                document.getElementById('ayudaCliente').textContent = 'Cliente reconocido y seleccionado automáticamente.';
+                resultadosCliente.style.display = 'none';
+                return true;
+            }
+
+            function mostrarClientes() {
+                const termino = buscarCliente.value.trim().toLocaleLowerCase();
+                resultadosCliente.replaceChildren();
+                if (!termino) { resultadosCliente.style.display = 'none'; return; }
+                const coincidencias = clientes.filter(c => `${c.nombre} ${c.documento}`.toLocaleLowerCase().includes(termino)).slice(0, 8);
+                coincidencias.forEach(cliente => {
+                    const opcion = document.createElement('button');
+                    opcion.type = 'button';
+                    opcion.className = 'list-group-item list-group-item-action';
+                    opcion.textContent = `${cliente.nombre} — ${cliente.documento}`;
+                    opcion.addEventListener('click', () => {
+                        idCliente.value = cliente.id;
+                        buscarCliente.value = `${cliente.nombre} (${cliente.documento})`;
+                        document.getElementById('ayudaCliente').textContent = 'Cliente seleccionado.';
+                        resultadosCliente.style.display = 'none';
+                    });
+                    resultadosCliente.append(opcion);
+                });
+                if (!coincidencias.length) {
+                    const vacio = document.createElement('div');
+                    vacio.className = 'list-group-item text-muted small';
+                    vacio.textContent = document.getElementById('TipoComprobante').value === 'Factura'
+                        ? 'Para factura debes registrar o seleccionar un cliente con RUC.'
+                        : 'Se registrará este nombre como cliente al confirmar la boleta.';
+                    resultadosCliente.append(vacio);
+                }
+                resultadosCliente.style.display = 'block';
+            }
+
+            buscarCliente.addEventListener('input', () => {
+                idCliente.value = '0';
+                document.getElementById('ayudaCliente').textContent = document.getElementById('TipoComprobante').value === 'Factura'
+                    ? 'Para factura debes seleccionar un cliente registrado con RUC.'
+                    : 'Si el nombre no existe, se registrará como cliente al confirmar la boleta.';
+                if (!seleccionarCoincidenciaExacta()) mostrarClientes();
+            });
+            buscarCliente.addEventListener('change', seleccionarCoincidenciaExacta);
+            buscarCliente.addEventListener('focus', () => { if (!idCliente.value) mostrarClientes(); });
+            document.getElementById('TipoComprobante').addEventListener('change', () => {
+                if (!idCliente.value && buscarCliente.value.trim()) mostrarClientes();
+            });
+            document.addEventListener('click', event => {
+                if (!event.target.closest('#buscarCliente') && !event.target.closest('#resultadosCliente')) resultadosCliente.style.display = 'none';
+            });
+
+            function render() {
+                tbody.innerHTML = carrito.length
+                    ? carrito.map((item, index) => `<tr>
+                        <td>${item.nombre}</td>
+                        <td>S/ ${item.precio.toFixed(2)}</td>
+                        <td>${item.cantidad}</td>
+                        <td class="text-end">S/ ${(item.precio * item.cantidad).toFixed(2)}</td>
+                        <td><button type="button" class="btn btn-sm btn-outline-danger" data-quitar="${index}" aria-label="Quitar ${item.nombre}"><i class="bi bi-trash"></i></button></td>
+                    </tr>`).join('')
+                    : '<tr><td colspan="5" class="text-center text-muted py-4">Aún no hay productos en el pedido.</td></tr>';
+
+                // Mantener los campos de binding fuera de la tabla garantiza que MVC reciba Items[n].*.
+                itemsPedido.innerHTML = carrito.map((item, index) => `
+                    <input type="hidden" name="Items[${index}].IdProducto" value="${item.id}">
+                    <input type="hidden" name="Items[${index}].Cantidad" value="${item.cantidad}">`).join('');
+                const subtotal = carrito.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
+                const igv = Math.round((subtotal * 0.18 + Number.EPSILON) * 100) / 100;
+                const total = subtotal + igv;
+                document.getElementById('subtotal').textContent = 'S/ ' + subtotal.toFixed(2);
+                document.getElementById('igv').textContent = 'S/ ' + igv.toFixed(2);
+                document.getElementById('total').textContent = 'S/ ' + total.toFixed(2);
+                if (!montoEditado) montoRecibido.value = total.toFixed(2);
+            }
+
+            montoRecibido.addEventListener('input', () => { montoEditado = true; });
+
+            document.getElementById('agregar').addEventListener('click', () => {
+                const select = document.getElementById('producto');
+                const option = select.selectedOptions[0];
+                const cantidad = Number(document.getElementById('cantidad').value);
+                const id = Number(select.value);
+                const precio = Number(option?.dataset.precio);
+                const stock = Number(option?.dataset.stock);
+
+                if (!Number.isInteger(id) || id < 1) {
+                    alert('Seleccione un producto.');
+                    return;
+                }
+                if (!Number.isInteger(cantidad) || cantidad < 1) {
+                    alert('Ingrese una cantidad válida.');
+                    return;
+                }
+                if (!Number.isFinite(precio) || precio < 0 || !Number.isFinite(stock)) {
+                    alert('No se pudo leer el precio o stock del producto. Recargue la página e intente otra vez.');
+                    return;
+                }
+
+                const existente = carrito.find(item => item.id === id);
+                if ((existente?.cantidad ?? 0) + cantidad > stock) {
+                    alert('La cantidad supera el stock disponible.');
+                    return;
+                }
+                if (existente) existente.cantidad += cantidad;
+                else carrito.push({ id, nombre: option.dataset.nombre, precio, cantidad });
+                render();
+            });
+
+            tbody.addEventListener('click', event => {
+                const boton = event.target.closest('[data-quitar]');
+                if (!boton) return;
+                carrito.splice(Number(boton.dataset.quitar), 1);
+                render();
+            });
+
+            form.addEventListener('submit', event => {
+                const esFactura = document.getElementById('TipoComprobante').value === 'Factura';
+                const clienteSeleccionado = Number(idCliente.value) > 0;
+                if ((!buscarCliente.value.trim() && !clienteSeleccionado) || (esFactura && !clienteSeleccionado)) {
+                    event.preventDefault();
+                    alert(esFactura
+                        ? 'Para emitir una factura debes seleccionar un cliente registrado con RUC.'
+                        : 'Escribe el nombre del cliente antes de confirmar la venta.');
+                    buscarCliente.focus();
+                    return;
+                }
+                if (carrito.length === 0) {
+                    event.preventDefault();
+                    alert('Agregue por lo menos un producto al pedido.');
+                    return;
+                }
+                const subtotal = carrito.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
+                const total = subtotal + Math.round((subtotal * 0.18 + Number.EPSILON) * 100) / 100;
+                if (document.getElementById('metodoPago').value === 'Efectivo' && Number(montoRecibido.value) < total) {
+                    event.preventDefault();
+                    alert(`El monto recibido debe ser al menos S/ ${total.toFixed(2)} (incluye IGV).`);
+                    montoRecibido.focus();
+                    return;
+                }
+                if (itemsPedido.querySelectorAll('input[name$=".IdProducto"]').length !== carrito.length) {
+                    event.preventDefault();
+                    alert('No se pudieron preparar los productos del pedido. Vuelva a agregarlos.');
+                }
+            });
+
+            document.getElementById('metodoPago').addEventListener('change', event => {
+                document.getElementById('recibidoGrupo').style.display = event.target.value === 'Efectivo' ? 'block' : 'none';
+            });
+            render();
+        })();
+    </script>
+}

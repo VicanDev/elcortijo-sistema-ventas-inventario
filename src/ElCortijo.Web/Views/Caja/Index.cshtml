@@ -1,0 +1,33 @@
+@model IEnumerable<ElCortijo.Dominio.Entidades.ArqueoCaja>
+@{ ViewData["Title"] = "Caja"; }
+
+<div class="d-flex justify-content-between align-items-start mb-4"><div><h2 class="fw-bold mb-1">Apertura y cierre de caja</h2><p class="text-muted mb-0">Panel inicial para consultar los arqueos registrados.</p></div><button class="btn btn-success" disabled><i class="bi bi-unlock me-1"></i> Abrir caja</button></div>
+<div class="alert alert-warning border-0 shadow-sm"><i class="bi bi-cone-striped me-2"></i><strong>Modulo en construccion:</strong> quedan pendientes la apertura, el cierre, el arqueo y la vinculacion automatica de ventas.</div>
+
+<form method="get" class="card border-0 shadow-sm mb-4 filter-card"><div class="card-body p-4">
+    <div class="d-flex align-items-center gap-2 mb-3"><i class="bi bi-funnel-fill text-primary"></i><h6 class="fw-bold mb-0">Filtros de busqueda</h6></div>
+    <div class="filter-grid">
+        <div class="filter-control filter-control-wide"><label class="filter-label" for="idUsuario">RESPONSABLE</label><select id="idUsuario" name="idUsuario" class="form-select"><option value="">Todos los usuarios</option>@foreach (var usuario in (IEnumerable<ElCortijo.Dominio.Entidades.Usuario>)ViewBag.Usuarios) { <option value="@usuario.IdUsuario" selected="@(ViewBag.IdUsuario == usuario.IdUsuario)">@usuario.NombreCompleto</option> }</select></div>
+        <div class="filter-control filter-control-small"><label class="filter-label" for="estado">ESTADO</label><select id="estado" name="estado" class="form-select"><option value="">Todos</option><option value="Abierta" selected="@(ViewBag.Estado == "Abierta")">Abierta</option><option value="Cerrada" selected="@(ViewBag.Estado == "Cerrada")">Cerrada</option></select></div>
+        <div class="filter-control"><label class="filter-label" for="desde">DESDE</label><input id="desde" name="desde" type="date" value="@ViewBag.Desde" class="form-control" /></div>
+        <div class="filter-control"><label class="filter-label" for="hasta">HASTA</label><input id="hasta" name="hasta" type="date" value="@ViewBag.Hasta" class="form-control" /></div>
+        <div class="filter-actions"><a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-funnel-slash me-1"></i> Limpiar</a><button class="btn btn-primary" type="submit"><i class="bi bi-search me-1"></i> Buscar</button></div>
+    </div>
+</div></form>
+
+<div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+    <thead class="table-light"><tr><th>Apertura</th><th>Responsable</th><th>Inicial</th><th>Efectivo</th><th>Digital</th><th>Diferencia</th><th>Estado</th></tr></thead>
+    <tbody>
+    @if (Model.Any())
+    {
+        foreach (var caja in Model)
+        {
+            <tr><td>@caja.FechaApertura.ToString("dd/MM/yyyy HH:mm")</td><td>@caja.Usuario.NombreCompleto</td><td>S/ @caja.MontoInicial.ToString("N2")</td><td>S/ @caja.TotalVentasEfectivo.ToString("N2")</td><td>S/ @caja.TotalVentasDigital.ToString("N2")</td><td>@(caja.Diferencia.HasValue ? $"S/ {caja.Diferencia:N2}" : "Pendiente")</td><td><span class="badge @(caja.Estado == "Abierta" ? "bg-success" : "bg-secondary")">@caja.Estado</span></td></tr>
+        }
+    }
+    else
+    {
+        <tr><td colspan="7" class="text-center text-muted py-4">Todavia no existen aperturas de caja.</td></tr>
+    }
+    </tbody>
+</table></div></div>

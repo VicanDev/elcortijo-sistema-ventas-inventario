@@ -1,0 +1,84 @@
+@model IEnumerable<ElCortijo.Dominio.Entidades.Producto>
+@{
+    ViewData["Title"] = "Catalogo de alimentos";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Catalogo de alimentos</h2>
+        <p class="text-muted mb-0">Administra productos, precios y niveles mínimos de inventario.</p>
+    </div>
+    <div class="d-flex gap-2"><a asp-controller="Catalogos" asp-action="Index" class="btn btn-outline-primary"><i class="bi bi-tags me-1"></i> Categorías y marcas</a><a asp-action="Crear" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i> Nuevo producto</a></div>
+</div>
+
+@if (TempData["Exito"] is string exito) { <div class="alert alert-success border-0 shadow-sm"><i class="bi bi-check-circle me-2"></i>@exito</div> }
+@if (TempData["Error"] is string error) { <div class="alert alert-warning border-0 shadow-sm"><i class="bi bi-exclamation-circle me-2"></i>@error</div> }
+
+<form method="get" class="card border-0 shadow-sm mb-4 filter-card">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-center gap-2 mb-3"><i class="bi bi-funnel-fill text-primary"></i><h6 class="fw-bold mb-0">Filtros de busqueda</h6></div>
+        <div class="filter-grid">
+            <div class="filter-control filter-control-wide">
+                <label class="filter-label" for="buscar">BUSCAR PRODUCTO</label>
+                <div class="input-group"><span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span><input id="buscar" name="buscar" value="@ViewBag.Buscar" class="form-control" placeholder="Codigo o nombre" /></div>
+            </div>
+            <div class="filter-control">
+                <label class="filter-label" for="idCategoria">CATEGORIA</label>
+                <select id="idCategoria" name="idCategoria" class="form-select">
+                    <option value="">Todas</option>
+                    @foreach (var categoria in (IEnumerable<ElCortijo.Dominio.Entidades.Categoria>)ViewBag.Categorias)
+                    { <option value="@categoria.IdCategoria" selected="@(ViewBag.IdCategoria == categoria.IdCategoria)">@categoria.Nombre</option> }
+                </select>
+            </div>
+            <div class="filter-control">
+                <label class="filter-label" for="idMarca">MARCA</label>
+                <select id="idMarca" name="idMarca" class="form-select">
+                    <option value="">Todas</option>
+                    @foreach (var marca in (IEnumerable<ElCortijo.Dominio.Entidades.Marca>)ViewBag.Marcas)
+                    { <option value="@marca.IdMarca" selected="@(ViewBag.IdMarca == marca.IdMarca)">@marca.Nombre</option> }
+                </select>
+            </div>
+            <div class="filter-control filter-control-small">
+                <label class="filter-label" for="estado">ESTADO</label>
+                <select id="estado" name="estado" class="form-select"><option value="">Todos</option><option value="activo" selected="@(ViewBag.Estado == "activo")">Activo</option><option value="inactivo" selected="@(ViewBag.Estado == "inactivo")">Inactivo</option></select>
+            </div>
+            <div class="filter-check">
+                <div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="soloBajoStock" value="true" id="soloBajoStock" checked="@(ViewBag.SoloBajoStock == true)" /><label class="form-check-label" for="soloBajoStock">Solo stock bajo</label></div>
+            </div>
+            <div class="filter-actions">
+                <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-funnel-slash me-1"></i> Limpiar</a>
+                <button class="btn btn-primary px-4" type="submit"><i class="bi bi-search me-1"></i> Buscar</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light"><tr><th>Codigo</th><th>Producto</th><th>Categoria / Marca</th><th>Precio</th><th>Stock</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+            <tbody>
+            @if (Model.Any())
+            {
+                foreach (var producto in Model)
+                {
+                    var bajoStock = producto.StockActual <= producto.StockMinimo;
+                    <tr>
+                        <td class="fw-semibold">@producto.Codigo</td>
+                        <td>@producto.Nombre<br /><small class="text-muted">@producto.UnidadMedida</small></td>
+                        <td>@producto.Categoria.Nombre<br /><small class="text-muted">@producto.Marca.Nombre</small></td>
+                        <td>S/ @producto.PrecioVenta.ToString("N2")</td>
+                        <td><span class="badge @(bajoStock ? "bg-danger" : "bg-success")">@producto.StockActual</span> <small class="text-muted">min. @producto.StockMinimo</small></td>
+                        <td><span class="badge @(producto.Estado ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary")">@(producto.Estado ? "Activo" : "Inactivo")</span></td>
+                        <td class="text-end text-nowrap"><a asp-action="Editar" asp-route-id="@producto.IdProducto" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a> <form asp-action="CambiarEstado" asp-route-id="@producto.IdProducto" method="post" class="d-inline"><button class="btn btn-sm @(producto.Estado ? "btn-outline-warning" : "btn-outline-success")" title="@(producto.Estado ? "Desactivar" : "Activar")"><i class="bi @(producto.Estado ? "bi-slash-circle" : "bi-check-circle")"></i></button></form></td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr><td colspan="7" class="text-center text-muted py-4">No se encontraron productos.</td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

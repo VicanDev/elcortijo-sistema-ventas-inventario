@@ -1,0 +1,32 @@
+@model ElCortijo.Web.ViewModels.ProductoFormViewModel
+@{
+    var editando = Model.IdProducto > 0;
+    ViewData["Title"] = editando ? "Editar producto" : "Nuevo producto";
+    var categorias = (IEnumerable<ElCortijo.Dominio.Entidades.Categoria>)ViewBag.Categorias;
+    var marcas = (IEnumerable<ElCortijo.Dominio.Entidades.Marca>)ViewBag.Marcas;
+}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div><h2 class="fw-bold mb-1">@(editando ? "Editar producto" : "Nuevo producto")</h2><p class="text-muted mb-0">Datos del catálogo y precio. El stock se gestiona desde Kardex.</p></div>
+    <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Volver</a>
+</div>
+<form asp-action="@(editando ? "Editar" : "Crear")" method="post" class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+        <input asp-for="IdProducto" type="hidden" />
+        <div class="row g-3">
+            <div class="col-md-4"><label asp-for="Codigo" class="form-label"></label><input asp-for="Codigo" class="form-control" /><span asp-validation-for="Codigo" class="text-danger"></span></div>
+            <div class="col-md-8"><label asp-for="Nombre" class="form-label"></label><input asp-for="Nombre" class="form-control" /><span asp-validation-for="Nombre" class="text-danger"></span></div>
+            <div class="col-12"><label asp-for="Descripcion" class="form-label"></label><textarea asp-for="Descripcion" class="form-control" rows="2"></textarea><span asp-validation-for="Descripcion" class="text-danger"></span></div>
+            <div class="col-md-6"><label asp-for="IdCategoria" class="form-label">Categoría</label><select asp-for="IdCategoria" class="form-select"><option value="0">Selecciona una categoría</option>@foreach (var c in categorias) { <option value="@c.IdCategoria">@c.Nombre</option> }</select><span asp-validation-for="IdCategoria" class="text-danger"></span></div>
+            <div class="col-md-6"><label asp-for="IdMarca" class="form-label">Marca</label><select asp-for="IdMarca" class="form-select"><option value="0">Selecciona una marca</option>@foreach (var m in marcas) { <option value="@m.IdMarca">@m.Nombre</option> }</select><span asp-validation-for="IdMarca" class="text-danger"></span></div>
+            <div class="col-md-4"><label asp-for="PrecioCompra" class="form-label"></label><input asp-for="PrecioCompra" class="form-control" step="0.01" /><span asp-validation-for="PrecioCompra" class="text-danger"></span></div>
+            <div class="col-md-4"><label asp-for="PrecioVenta" class="form-label"></label><input asp-for="PrecioVenta" class="form-control" step="0.01" /><span asp-validation-for="PrecioVenta" class="text-danger"></span></div>
+            <div class="col-md-4"><label asp-for="StockMinimo" class="form-label"></label><input asp-for="StockMinimo" class="form-control" /><span asp-validation-for="StockMinimo" class="text-danger"></span></div>
+            <div class="col-md-6"><label asp-for="UnidadMedida" class="form-label"></label><input asp-for="UnidadMedida" class="form-control" placeholder="Saco 15 kg, bolsa, unidad..." /><span asp-validation-for="UnidadMedida" class="text-danger"></span></div>
+            <div class="col-md-6"><label asp-for="ImagenUrl" class="form-label"></label><input asp-for="ImagenUrl" class="form-control" placeholder="https://... o /images/..." /><span asp-validation-for="ImagenUrl" class="text-danger"></span></div>
+            @if (editando) { <div class="col-12"><div class="form-check"><input asp-for="Estado" class="form-check-input" /><label asp-for="Estado" class="form-check-label">Producto activo</label></div></div> }
+        </div>
+    </div>
+    <div class="card-footer bg-white border-0 px-4 pb-4"><button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Guardar producto</button> <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a></div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

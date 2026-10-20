@@ -1,0 +1,40 @@
+@using ElCortijo.Dominio.Entidades
+@using ElCortijo.Web.ViewModels
+@{
+    ViewData["Title"] = "Categorías y marcas";
+    var categorias = (IEnumerable<Categoria>)ViewBag.Categorias;
+    var marcas = (IEnumerable<Marca>)ViewBag.Marcas;
+    var errorModelo = ViewBag.ModeloError as CatalogoItemViewModel;
+}
+<div class="d-flex justify-content-between align-items-center mb-4"><div><h2 class="fw-bold mb-1">Categorías y marcas</h2><p class="text-muted mb-0">Administra las opciones disponibles en el catálogo.</p></div><a asp-controller="Productos" asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Volver a productos</a></div>
+@if (TempData["Exito"] is string exito) { <div class="alert alert-success">@exito</div> }
+@if (TempData["Error"] is string error) { <div class="alert alert-warning">@error</div> }
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100"><div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="bi bi-tags text-primary me-2"></i>Categorías</h5></div><div class="card-body">
+            <form asp-action="CrearCategoria" method="post" class="row g-2 mb-4">
+                <div class="col-md-5"><input name="Nombre" class="form-control" placeholder="Nueva categoría" value="@(ViewBag.TipoError == "Categoria" ? errorModelo?.Nombre : "")" maxlength="100" required /></div>
+                <div class="col-md-5"><input name="Descripcion" class="form-control" placeholder="Descripción (opcional)" value="@(ViewBag.TipoError == "Categoria" ? errorModelo?.Descripcion : "")" maxlength="250" /></div>
+                <div class="col-md-2 d-grid"><button class="btn btn-primary" title="Agregar"><i class="bi bi-plus-lg"></i></button></div>
+                @if (ViewBag.TipoError == "Categoria" && errorModelo is not null) { <div class="col-12 text-danger small">@string.Join(" ", ViewData.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage))</div> }
+            </form>
+            <div class="table-responsive"><table class="table table-hover align-middle"><thead class="table-light"><tr><th>Nombre</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead><tbody>
+            @foreach (var c in categorias) { <tr><td>@c.Nombre<br /><small class="text-muted">@(c.Descripcion ?? "Sin descripción")</small></td><td><span class="badge @(c.Estado ? "bg-success" : "bg-secondary")">@(c.Estado ? "Activa" : "Inactiva")</span></td><td class="text-end"><a asp-action="EditarCategoria" asp-route-id="@c.IdCategoria" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a> <form asp-action="CambiarEstadoCategoria" asp-route-id="@c.IdCategoria" method="post" class="d-inline"><button class="btn btn-sm btn-outline-secondary" title="@(c.Estado ? "Desactivar" : "Activar")"><i class="bi @(c.Estado ? "bi-slash-circle" : "bi-check-circle")"></i></button></form></td></tr> }
+            @if (!categorias.Any()) { <tr><td colspan="3" class="text-center text-muted py-3">Aún no hay categorías.</td></tr> }
+            </tbody></table></div>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100"><div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold"><i class="bi bi-bookmark-star text-primary me-2"></i>Marcas</h5></div><div class="card-body">
+            <form asp-action="CrearMarca" method="post" class="row g-2 mb-4">
+                <div class="col-9"><input name="Nombre" class="form-control" placeholder="Nueva marca" value="@(ViewBag.TipoError == "Marca" ? errorModelo?.Nombre : "")" maxlength="100" required /></div>
+                <div class="col-3 d-grid"><button class="btn btn-primary" title="Agregar"><i class="bi bi-plus-lg"></i> Agregar</button></div>
+                @if (ViewBag.TipoError == "Marca" && errorModelo is not null) { <div class="col-12 text-danger small">@string.Join(" ", ViewData.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage))</div> }
+            </form>
+            <div class="table-responsive"><table class="table table-hover align-middle"><thead class="table-light"><tr><th>Nombre</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead><tbody>
+            @foreach (var m in marcas) { <tr><td>@m.Nombre</td><td><span class="badge @(m.Estado ? "bg-success" : "bg-secondary")">@(m.Estado ? "Activa" : "Inactiva")</span></td><td class="text-end"><a asp-action="EditarMarca" asp-route-id="@m.IdMarca" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a> <form asp-action="CambiarEstadoMarca" asp-route-id="@m.IdMarca" method="post" class="d-inline"><button class="btn btn-sm btn-outline-secondary" title="@(m.Estado ? "Desactivar" : "Activar")"><i class="bi @(m.Estado ? "bi-slash-circle" : "bi-check-circle")"></i></button></form></td></tr> }
+            @if (!marcas.Any()) { <tr><td colspan="3" class="text-center text-muted py-3">Aún no hay marcas.</td></tr> }
+            </tbody></table></div>
+        </div></div>
+    </div>
+</div>

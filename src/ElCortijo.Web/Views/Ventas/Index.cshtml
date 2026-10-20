@@ -1,7 +1,37 @@
 @model IEnumerable<ElCortijo.Dominio.Entidades.Venta>
 @{ ViewData["Title"] = "Ventas y pedidos"; }
-<div class="d-flex justify-content-between align-items-center mb-4"><div><h2 class="fw-bold mb-1">Ventas y pedidos</h2><p class="text-muted small mb-0">Historial de ventas confirmadas</p></div><a asp-action="Crear" class="btn btn-primary"><i class="bi bi-cart-plus-fill me-1"></i> Nueva venta</a></div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div><h2 class="fw-bold mb-1">Ventas y pedidos</h2><p class="text-muted small mb-0">Historial de ventas confirmadas</p></div>
+    <a asp-action="Crear" class="btn btn-primary"><i class="bi bi-cart-plus-fill me-1"></i> Nueva venta</a>
+</div>
 @if (TempData["Exito"] is string mensaje) { <div class="alert alert-success">@mensaje</div> }
-<div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Comprobante</th><th>Cliente</th><th>Productos</th><th>Pago</th><th>Total</th><th>Fecha</th></tr></thead><tbody>
-@foreach (var venta in Model) { <tr><td class="fw-semibold">@venta.NumeroComprobante<br /><small class="text-muted">@venta.TipoComprobante</small></td><td>@venta.Cliente.NombreRazonSocial</td><td>@venta.DetalleVentas.Sum(d => d.Cantidad) artículos</td><td>@venta.MetodoPago</td><td class="fw-bold">S/ @venta.Total.ToString("N2")</td><td>@venta.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</td></tr> }
-</tbody></table></div></div>
+
+<form method="get" class="card border-0 shadow-sm mb-4 filter-card"><div class="card-body p-4">
+    <div class="d-flex align-items-center gap-2 mb-3"><i class="bi bi-funnel-fill text-primary"></i><h6 class="fw-bold mb-0">Filtros de busqueda</h6></div>
+    <div class="filter-grid">
+        <div class="filter-control filter-control-wide"><label class="filter-label" for="buscar">BUSCAR VENTA</label><div class="input-group"><span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span><input id="buscar" name="buscar" value="@ViewBag.Buscar" class="form-control" placeholder="Comprobante, cliente, documento o producto" /></div></div>
+        <div class="filter-control filter-control-small"><label class="filter-label" for="tipoComprobante">COMPROBANTE</label><select id="tipoComprobante" name="tipoComprobante" class="form-select"><option value="">Todos</option><option value="Boleta" selected="@(ViewBag.TipoComprobante == "Boleta")">Boleta</option><option value="Factura" selected="@(ViewBag.TipoComprobante == "Factura")">Factura</option></select></div>
+        <div class="filter-control"><label class="filter-label" for="metodoPago">METODO DE PAGO</label><select id="metodoPago" name="metodoPago" class="form-select"><option value="">Todos</option><option value="Efectivo" selected="@(ViewBag.MetodoPago == "Efectivo")">Efectivo</option><option value="Yape/Plin" selected="@(ViewBag.MetodoPago == "Yape/Plin")">Yape / Plin</option><option value="Tarjeta" selected="@(ViewBag.MetodoPago == "Tarjeta")">Tarjeta</option><option value="Transferencia" selected="@(ViewBag.MetodoPago == "Transferencia")">Transferencia</option></select></div>
+        <div class="filter-control"><label class="filter-label" for="desde">DESDE</label><input id="desde" name="desde" type="date" value="@ViewBag.Desde" class="form-control" /></div>
+        <div class="filter-control"><label class="filter-label" for="hasta">HASTA</label><input id="hasta" name="hasta" type="date" value="@ViewBag.Hasta" class="form-control" /></div>
+        <div class="filter-actions"><a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-funnel-slash me-1"></i> Limpiar</a><button class="btn btn-primary" type="submit"><i class="bi bi-search me-1"></i> Buscar</button></div>
+    </div>
+</div></form>
+
+<div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+    <thead class="table-light"><tr><th>Comprobante</th><th>Cliente</th><th>Productos</th><th>Pago</th><th>Total</th><th>Fecha</th></tr></thead>
+    <tbody>
+    @if (Model.Any())
+    {
+        foreach (var venta in Model)
+        {
+            <tr><td class="fw-semibold">@venta.NumeroComprobante<br /><small class="text-muted">@venta.TipoComprobante</small></td><td>@venta.Cliente.NombreRazonSocial</td><td>@venta.DetalleVentas.Sum(d => d.Cantidad) artículos</td><td>@venta.MetodoPago</td><td class="fw-bold">S/ @venta.Total.ToString("N2")</td><td>@venta.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</td></tr>
+        }
+    }
+    else
+    {
+        <tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-search d-block fs-3 mb-2"></i>No se encontraron ventas con los filtros seleccionados.</td></tr>
+    }
+    </tbody>
+</table></div></div>
