@@ -24,12 +24,10 @@ public class ProductoFormViewModel
     [Range(1, int.MaxValue, ErrorMessage = "Selecciona una marca.")]
     public int IdMarca { get; set; }
 
-    [Range(typeof(decimal), "0.01", "99999999", ErrorMessage = "El precio de compra debe ser mayor a cero.")]
-    [Display(Name = "Precio de compra")]
+    [Range(0.01, 99999999, ErrorMessage = "El precio de compra debe ser mayor a cero.")]
     public decimal PrecioCompra { get; set; }
 
-    [Range(typeof(decimal), "0.01", "99999999", ErrorMessage = "El precio de venta debe ser mayor a cero.")]
-    [Display(Name = "Precio de venta")]
+    [Range(0.01, 99999999, ErrorMessage = "El precio de venta debe ser mayor a cero.")]
     public decimal PrecioVenta { get; set; }
 
     [Range(0, 1000000)]
