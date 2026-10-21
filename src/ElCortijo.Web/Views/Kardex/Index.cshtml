@@ -6,11 +6,9 @@
 
 <div class="d-flex justify-content-between align-items-start mb-4">
     <div><h2 class="fw-bold mb-1">Movimientos y Kardex</h2><p class="text-muted mb-0">Historial de movimientos ya registrados.</p></div>
-    <button class="btn btn-primary" disabled><i class="bi bi-box-arrow-in-down me-1"></i> Registrar entrada</button>
-</div>
-
-<div class="alert alert-warning border-0 shadow-sm">
-    <i class="bi bi-cone-striped me-2"></i><strong>Modulo en construccion:</strong> queda pendiente registrar entradas y ajustes de almacen.
+    <a asp-action="RegistrarEntrada" class="btn btn-primary">
+        <i class="bi bi-box-arrow-in-down me-1"></i> Registrar entrada
+    </a>
 </div>
 
 <form method="get" class="card border-0 shadow-sm mb-4 filter-card"><div class="card-body p-4">

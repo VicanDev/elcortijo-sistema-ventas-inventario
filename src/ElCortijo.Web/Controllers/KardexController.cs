@@ -1,7 +1,10 @@
 using ElCortijo.Datos;
+using ElCortijo.Dominio.Entidades;
+using ElCortijo.Web.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ElCortijo.Web.Controllers;
 
@@ -47,7 +50,79 @@ public class KardexController : Controller
 
         return View(await consulta.OrderByDescending(m => m.FechaRegistro).Take(150).ToListAsync());
     }
+        public async Task<IActionResult> RegistrarEntrada()
+    {
+        ViewBag.Productos = await _context.Productos
+            .AsNoTracking()
+            .Where(p => p.Estado)
+            .OrderBy(p => p.Nombre)
+            .Select(p => new { p.IdProducto, p.Codigo, p.Nombre, p.StockActual })
+            .ToListAsync();
 
-    // TODO (Mellany): implementar el formulario transaccional para registrar
-    // entradas de mercaderia y ajustes de inventario.
+        return View(new EntradaInventarioViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RegistrarEntrada(EntradaInventarioViewModel modelo)
+    {
+        if (!ModelState.IsValid)
+        {
+            ViewBag.Productos = await _context.Productos
+                .AsNoTracking()
+                .Where(p => p.Estado)
+                .OrderBy(p => p.Nombre)
+                .Select(p => new { p.IdProducto, p.Codigo, p.Nombre, p.StockActual })
+                .ToListAsync();
+            return View(modelo);
+        }
+
+        var producto = await _context.Productos.FindAsync(modelo.IdProducto);
+        if (producto is null || !producto.Estado)
+        {
+            ModelState.AddModelError(nameof(modelo.IdProducto), "El producto no existe o está inactivo.");
+            ViewBag.Productos = await _context.Productos
+                .AsNoTracking()
+                .Where(p => p.Estado)
+                .OrderBy(p => p.Nombre)
+                .Select(p => new { p.IdProducto, p.Codigo, p.Nombre, p.StockActual })
+                .ToListAsync();
+            return View(modelo);
+        }
+
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        try
+        {
+            var stockAnterior = producto.StockActual;
+            var stockPosterior = stockAnterior + modelo.Cantidad;
+
+            producto.StockActual = stockPosterior;
+
+            var movimiento = new MovimientoInventario
+            {
+                IdProducto = producto.IdProducto,
+                IdUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!),
+                TipoMovimiento = "Entrada",
+                Cantidad = modelo.Cantidad,
+                StockAnterior = stockAnterior,
+                StockPosterior = stockPosterior,
+                Motivo = modelo.Motivo.Trim(),
+                FechaRegistro = DateTime.Now
+            };
+
+            _context.MovimientosInventario.Add(movimiento);
+            await _context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+
+            TempData["Exito"] = $"Entrada registrada. El stock de {producto.Nombre} ahora es {stockPosterior}.";
+            return RedirectToAction(nameof(Index));
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
 }
