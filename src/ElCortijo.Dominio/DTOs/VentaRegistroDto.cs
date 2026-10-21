@@ -4,8 +4,10 @@ namespace ElCortijo.Dominio.DTOs;
 
 public class VentaRegistroViewModel
 {
-    [Range(1, int.MaxValue, ErrorMessage = "Seleccione un cliente.")]
+    [Range(0, int.MaxValue)]
     public int IdCliente { get; set; }
+    [StringLength(150)]
+    public string? NombreClienteManual { get; set; }
     [Required]
     public string MetodoPago { get; set; } = "Efectivo";
     [Required]

@@ -12,10 +12,45 @@ public class VentaService : IVentaService
 
     public VentaService(ElCortijoDbContext context) => _context = context;
 
-    public async Task<IEnumerable<Venta>> ObtenerTodasAsync() => await _context.Ventas
-        .AsNoTracking().Include(v => v.Cliente).Include(v => v.Usuario)
-        .Include(v => v.DetalleVentas).ThenInclude(d => d.Producto)
-        .OrderByDescending(v => v.FechaRegistro).ToListAsync();
+    public async Task<IEnumerable<Venta>> ObtenerTodasAsync(
+        string? buscar = null,
+        string? tipoComprobante = null,
+        string? metodoPago = null,
+        DateTime? desde = null,
+        DateTime? hasta = null)
+    {
+        var consulta = _context.Ventas.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(buscar))
+        {
+            buscar = buscar.Trim();
+            consulta = consulta.Where(v => v.NumeroComprobante.Contains(buscar)
+                || v.Cliente.NombreRazonSocial.Contains(buscar)
+                || v.Cliente.NumeroDocumento.Contains(buscar)
+                || v.DetalleVentas.Any(d => d.Producto.Nombre.Contains(buscar)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(tipoComprobante))
+            consulta = consulta.Where(v => v.TipoComprobante == tipoComprobante);
+
+        if (!string.IsNullOrWhiteSpace(metodoPago))
+            consulta = consulta.Where(v => v.MetodoPago == metodoPago);
+
+        if (desde.HasValue)
+            consulta = consulta.Where(v => v.FechaRegistro >= desde.Value.Date);
+
+        if (hasta.HasValue)
+        {
+            var limiteHasta = hasta.Value.Date.AddDays(1);
+            consulta = consulta.Where(v => v.FechaRegistro < limiteHasta);
+        }
+
+        return await consulta
+            .Include(v => v.Cliente).Include(v => v.Usuario)
+            .Include(v => v.DetalleVentas).ThenInclude(d => d.Producto)
+            .OrderByDescending(v => v.FechaRegistro)
+            .ToListAsync();
+    }
 
     public async Task<IEnumerable<Producto>> ObtenerProductosDisponiblesAsync() => await _context.Productos
         .AsNoTracking().Where(p => p.Estado && p.StockActual > 0).OrderBy(p => p.Nombre).ToListAsync();
@@ -30,8 +65,18 @@ public class VentaService : IVentaService
         await using var transaccion = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
         try
         {
-            var cliente = await _context.Clientes.SingleOrDefaultAsync(c => c.IdCliente == solicitud.IdCliente && c.Estado);
-            if (cliente == null) return (false, "El cliente seleccionado no existe o está inactivo.", null);
+            Cliente? cliente = null;
+            var nombreManual = solicitud.NombreClienteManual?.Trim();
+            if (solicitud.IdCliente > 0)
+            {
+                cliente = await _context.Clientes.SingleOrDefaultAsync(c => c.IdCliente == solicitud.IdCliente && c.Estado);
+                if (cliente == null) return (false, "El cliente seleccionado no existe o está inactivo.", null);
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(nombreManual)) return (false, "Escriba el nombre del cliente.", null);
+                if (solicitud.TipoComprobante == "Factura") return (false, "Para emitir una factura, seleccione un cliente registrado con RUC.", null);
+            }
 
             var ids = solicitud.Items.Select(i => i.IdProducto).ToList();
             var productos = await _context.Productos.Where(p => ids.Contains(p.IdProducto) && p.Estado).ToDictionaryAsync(p => p.IdProducto);
@@ -48,6 +93,23 @@ public class VentaService : IVentaService
             var total = subtotal + igv;
             if (solicitud.MetodoPago == "Efectivo" && solicitud.MontoRecibido < total)
                 return (false, "El monto recibido no cubre el total de la venta.", null);
+
+            if (solicitud.TipoComprobante == "Factura" && cliente?.TipoDocumento != "RUC")
+                return (false, "Para emitir una factura, el cliente debe tener un RUC registrado.", null);
+
+            if (cliente == null)
+            {
+                cliente = new Cliente
+                {
+                    TipoDocumento = "SIN DOCUMENTO",
+                    NumeroDocumento = $"CF{Guid.NewGuid():N}"[..20].ToUpperInvariant(),
+                    NombreRazonSocial = nombreManual!,
+                    Estado = true,
+                    FechaRegistro = DateTime.Now
+                };
+                _context.Clientes.Add(cliente);
+                await _context.SaveChangesAsync();
+            }
 
             var venta = new Venta
             {

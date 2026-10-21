@@ -11,10 +11,26 @@ public class ClienteService : IClienteService
 
     public ClienteService(ElCortijoDbContext context) => _context = context;
 
-    public async Task<IEnumerable<Cliente>> ObtenerTodosAsync(bool soloActivos = false)
+    public async Task<IEnumerable<Cliente>> ObtenerTodosAsync(bool soloActivos = false, string? buscar = null, string? tipoDocumento = null, bool? estado = null)
     {
         var consulta = _context.Clientes.AsNoTracking();
-        if (soloActivos) consulta = consulta.Where(c => c.Estado);
+        if (estado.HasValue)
+            consulta = consulta.Where(c => c.Estado == estado.Value);
+        else if (soloActivos)
+            consulta = consulta.Where(c => c.Estado);
+
+        if (!string.IsNullOrWhiteSpace(buscar))
+        {
+            buscar = buscar.Trim();
+            consulta = consulta.Where(c => c.NumeroDocumento.Contains(buscar)
+                || c.NombreRazonSocial.Contains(buscar)
+                || (c.Correo != null && c.Correo.Contains(buscar))
+                || (c.Telefono != null && c.Telefono.Contains(buscar)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(tipoDocumento))
+            consulta = consulta.Where(c => c.TipoDocumento == tipoDocumento);
+
         return await consulta.OrderBy(c => c.NombreRazonSocial).ToListAsync();
     }
 
@@ -62,7 +78,13 @@ public class ClienteService : IClienteService
     {
         cliente.TipoDocumento = cliente.TipoDocumento.Trim().ToUpperInvariant();
         cliente.NumeroDocumento = cliente.NumeroDocumento.Trim();
-        if (cliente.TipoDocumento is not ("DNI" or "RUC")) return "El tipo de documento debe ser DNI o RUC.";
+        if (cliente.TipoDocumento == "SIN DOCUMENTO")
+        {
+            if (cliente.NumeroDocumento.Length != 20 || !cliente.NumeroDocumento.StartsWith("CF", StringComparison.Ordinal)
+                || !cliente.NumeroDocumento[2..].All(Uri.IsHexDigit))
+                return "El código interno de consumidor final no es válido.";
+        }
+        else if (cliente.TipoDocumento is not ("DNI" or "RUC")) return "El tipo de documento debe ser DNI o RUC.";
         if (cliente.TipoDocumento == "DNI" && !EsDniValido(cliente.NumeroDocumento)) return "El DNI debe tener exactamente 8 dígitos.";
         if (cliente.TipoDocumento == "RUC" && !EsRucValido(cliente.NumeroDocumento)) return "El RUC debe tener 11 dígitos y un dígito verificador válido.";
         var existe = await _context.Clientes.AnyAsync(c => c.NumeroDocumento == cliente.NumeroDocumento && c.IdCliente != cliente.IdCliente);

@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using ElCortijo.Datos;
 using ElCortijo.Negocio.Interfaces;
 using ElCortijo.Negocio.Servicios;
+using QuestPDF.Infrastructure;
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +48,6 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Inicio}/{action=Index}/{id?}");
 
 app.Run();

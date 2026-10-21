@@ -11,7 +11,14 @@ public class ClientesController : Controller
     private readonly IClienteService _clienteService;
     public ClientesController(IClienteService clienteService) => _clienteService = clienteService;
 
-    public async Task<IActionResult> Index() => View(await _clienteService.ObtenerTodosAsync());
+    public async Task<IActionResult> Index(string? buscar, string? tipoDocumento, string? estado)
+    {
+        bool? estadoActivo = estado switch { "activo" => true, "inactivo" => false, _ => null };
+        ViewBag.Buscar = buscar;
+        ViewBag.TipoDocumento = tipoDocumento;
+        ViewBag.Estado = estado;
+        return View(await _clienteService.ObtenerTodosAsync(false, buscar, tipoDocumento, estadoActivo));
+    }
     public IActionResult Crear() => View(new Cliente());
 
     [HttpPost, ValidateAntiForgeryToken]

@@ -57,6 +57,214 @@
     </div>
 </div>
 
+@section Scripts {
+    <script src="~/lib/chartjs/chart.umd.min.js" asp-append-version="true"></script>
+    <script>
+        (() => {
+            const chartData = {
+                ventas: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.VentasUltimosSieteDias.Select(p => new { etiqueta = p.Etiqueta, total = p.Total, fecha = p.Fecha.ToString("dd/MM"), cantidad = p.Cantidad }))),
+                productos: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ProductosMasVendidos.Select(p => new { nombre = p.Nombre, cantidad = p.Cantidad, total = p.TotalVendido }))),
+                pagos: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.VentasPorMetodoPago.Select(p => new { metodo = p.Metodo, total = p.Total, operaciones = p.Operaciones })))
+            };
+            if (!window.Chart) return;
+
+            const currency = value => new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(value || 0);
+            const isDark = () => document.documentElement.getAttribute('data-bs-theme') === 'dark';
+            const textColor = () => isDark() ? '#cbd5e1' : '#64748b';
+            const gridColor = () => isDark() ? 'rgba(148,163,184,.16)' : 'rgba(148,163,184,.2)';
+            Chart.defaults.font.family = 'Inter, system-ui, -apple-system, "Segoe UI", sans-serif';
+            Chart.defaults.color = textColor();
+            Chart.defaults.plugins.tooltip.backgroundColor = isDark() ? '#0f172a' : '#172033';
+            Chart.defaults.plugins.tooltip.titleColor = '#fff';
+            Chart.defaults.plugins.tooltip.bodyColor = '#e2e8f0';
+            Chart.defaults.plugins.tooltip.padding = 12;
+            Chart.defaults.plugins.tooltip.cornerRadius = 10;
+
+            const charts = [];
+            const baseOptions = { responsive: true, maintainAspectRatio: false, animation: { duration: 650 } };
+            const ventasCanvas = document.getElementById('ventasSemanaChart');
+            if (ventasCanvas) {
+                charts.push(new Chart(ventasCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.ventas.map(p => p.etiqueta),
+                        datasets: [{
+                            label: 'Ventas',
+                            data: chartData.ventas.map(p => p.total),
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37,99,235,.12)',
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: '#2563eb',
+                            pointBorderWidth: 3,
+                            pointRadius: 5,
+                            pointHoverRadius: 8,
+                            borderWidth: 3,
+                            fill: true,
+                            tension: .38
+                        }]
+                    },
+                    options: {
+                        ...baseOptions,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: { legend: { display: false }, tooltip: { callbacks: { title: items => chartData.ventas[items[0].dataIndex]?.fecha ?? '', label: item => `${currency(item.raw)} · ${chartData.ventas[item.dataIndex]?.cantidad ?? 0} venta(s)` } } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: textColor(), font: { weight: '600' } } },
+                            y: { beginAtZero: true, grid: { color: gridColor(), drawBorder: false }, ticks: { color: textColor(), callback: value => `S/ ${value}` } }
+                        }
+                    }
+                }));
+            }
+
+            const productosCanvas = document.getElementById('productosMasVendidosChart');
+            if (productosCanvas) {
+                charts.push(new Chart(productosCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: chartData.productos.map(p => p.nombre),
+                        datasets: [{
+                            label: 'Unidades vendidas',
+                            data: chartData.productos.map(p => p.cantidad),
+                            backgroundColor: ['#2563eb', '#0ea5e9', '#8b5cf6', '#14b8a6', '#f59e0b'],
+                            hoverBackgroundColor: ['#1d4ed8', '#0284c7', '#7c3aed', '#0f766e', '#d97706'],
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            barThickness: 24
+                        }]
+                    },
+                    options: {
+                        ...baseOptions,
+                        indexAxis: 'y',
+                        interaction: { mode: 'nearest', intersect: true },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: item => ` ${item.raw} unidad(es)`, afterLabel: item => `Ingresos: ${currency(chartData.productos[item.dataIndex]?.total)}` } }
+                        },
+                        scales: {
+                            x: { beginAtZero: true, grid: { color: gridColor(), drawBorder: false }, ticks: { color: textColor(), precision: 0, stepSize: 1 } },
+                            y: { grid: { display: false }, ticks: { color: textColor(), font: { weight: '600' }, callback: (value, index) => {
+                                const nombre = chartData.productos[index]?.nombre ?? value;
+                                return nombre.length > 28 ? `${nombre.slice(0, 26)}…` : nombre;
+                            } } }
+                        }
+                    }
+                }));
+            }
+
+            const pagosCanvas = document.getElementById('ventasMetodoChart');
+            if (pagosCanvas) {
+                charts.push(new Chart(pagosCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: chartData.pagos.map(p => p.metodo),
+                        datasets: [{
+                            data: chartData.pagos.map(p => p.total),
+                            backgroundColor: ['#10b981', '#2563eb', '#f59e0b', '#8b5cf6', '#f43f5e'],
+                            hoverBackgroundColor: ['#059669', '#1d4ed8', '#d97706', '#7c3aed', '#e11d48'],
+                            borderColor: isDark() ? '#1e293b' : '#fff',
+                            borderWidth: 4,
+                            hoverOffset: 12,
+                            borderRadius: 5
+                        }]
+                    },
+                    options: {
+                        ...baseOptions,
+                        cutout: '68%',
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: textColor(), usePointStyle: true, pointStyle: 'circle', padding: 22 } },
+                            tooltip: { callbacks: { label: item => {
+                                const pago = chartData.pagos[item.dataIndex];
+                                const total = chartData.pagos.reduce((sum, p) => sum + p.total, 0);
+                                const porcentaje = total ? (pago.total * 100 / total).toFixed(1) : '0.0';
+                                return ` ${pago.metodo}: ${currency(pago.total)} (${porcentaje}%, ${pago.operaciones} ops.)`;
+                            } } }
+                        }
+                    }
+                }));
+            }
+
+            document.getElementById('themeToggle')?.addEventListener('click', () => {
+                requestAnimationFrame(() => {
+                    Chart.defaults.color = textColor();
+                    Chart.defaults.plugins.tooltip.backgroundColor = isDark() ? '#0f172a' : '#172033';
+                    charts.forEach(chart => {
+                        Object.values(chart.options.scales ?? {}).forEach(scale => {
+                        if (scale.ticks) scale.ticks.color = textColor();
+                        if (scale.grid) scale.grid.color = gridColor();
+                    });
+                    if (chart.config.type === 'doughnut') chart.options.plugins.legend.labels.color = textColor();
+                    const dataset = chart.data.datasets[0];
+                        if (chart.config.type === 'doughnut') dataset.borderColor = isDark() ? '#1e293b' : '#fff';
+                        chart.update();
+                    });
+                });
+            });
+        })();
+    </script>
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-7">
+        <section class="card border-0 shadow-sm dashboard-chart-card h-100">
+            <div class="card-header bg-white border-0 px-4 pt-4 pb-0 d-flex justify-content-between align-items-start">
+                <div><h6 class="fw-bold mb-1"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Ventas de los últimos 7 días</h6><p class="text-muted small mb-0">Importe diario de ventas completadas</p></div>
+                <span class="badge rounded-pill bg-primary-subtle text-primary">S/ @Model.VentasUltimosSieteDias.Sum(p => p.Total).ToString("N2")</span>
+            </div>
+            <div class="card-body px-3 pt-2 pb-3">
+                @if (Model.VentasUltimosSieteDias.Any(p => p.Total > 0))
+                {
+                    <div class="dashboard-chart-canvas dashboard-chart-canvas-line">
+                        <canvas id="ventasSemanaChart" role="img" aria-label="Gráfico interactivo de ventas de los últimos siete días"></canvas>
+                    </div>
+                }
+                else
+                {
+                    <div class="dashboard-chart-empty"><i class="bi bi-graph-up"></i><strong>Aún no hay ventas esta semana</strong><span>El gráfico se llenará al registrar ventas.</span></div>
+                }
+            </div>
+        </section>
+    </div>
+
+    <div class="col-xl-5">
+        <section class="card border-0 shadow-sm dashboard-chart-card h-100">
+            <div class="card-header bg-white border-0 px-4 pt-4 pb-0"><h6 class="fw-bold mb-1"><i class="bi bi-credit-card-2-front text-success me-2"></i>Ventas por método de pago</h6><p class="text-muted small mb-0">Distribución de ingresos en los últimos 30 días</p></div>
+            <div class="card-body px-4 py-3">
+                @if (Model.VentasPorMetodoPago.Any())
+                {
+                    <div class="dashboard-chart-canvas dashboard-chart-canvas-doughnut">
+                        <canvas id="ventasMetodoChart" role="img" aria-label="Gráfico interactivo de ventas por método de pago"></canvas>
+                    </div>
+                }
+                else
+                {
+                    <div class="dashboard-chart-empty dashboard-chart-empty-short"><i class="bi bi-credit-card"></i><strong>Aún no hay ventas para comparar</strong></div>
+                }
+            </div>
+        </section>
+    </div>
+
+    <div class="col-12">
+        <section class="card border-0 shadow-sm dashboard-chart-card">
+            <div class="card-header bg-white border-0 px-4 pt-4 pb-0"><h6 class="fw-bold mb-1"><i class="bi bi-trophy text-warning me-2"></i>Productos más vendidos</h6><p class="text-muted small mb-0">Unidades vendidas en los últimos 30 días</p></div>
+            <div class="card-body px-3 py-3">
+                @if (Model.ProductosMasVendidos.Any())
+                {
+                    <div class="dashboard-chart-canvas dashboard-chart-canvas-products" style="height: @(Math.Clamp(Model.ProductosMasVendidos.Count * 48 + 70, 150, 310))px">
+                        <canvas id="productosMasVendidosChart" role="img" aria-label="Gráfico interactivo de los cinco productos más vendidos por unidades"></canvas>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center px-2 pt-1 text-muted small">
+                        <span>Unidades vendidas</span>
+                        <span>Ingresos: S/ @Model.ProductosMasVendidos.Sum(p => p.TotalVendido).ToString("N2")</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="dashboard-chart-empty"><i class="bi bi-box-seam"></i><strong>Aún no hay productos vendidos</strong><span>Las ventas aparecerán aquí.</span></div>
+                }
+            </div>
+        </section>
+    </div>
+</div>
+
 <div class="row g-4">
     <div class="col-lg-7">
         <div class="card border-0 shadow-sm h-100">

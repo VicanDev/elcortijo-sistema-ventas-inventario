@@ -1,0 +1,36 @@
+@model ElCortijo.Web.ViewModels.ReporteResumenViewModel
+@{ ViewData["Title"] = "Reportes generales"; }
+
+<div class="d-flex justify-content-between align-items-start mb-4"><div><h2 class="fw-bold mb-1">Reportes generales</h2><p class="text-muted mb-0">Resumen de ventas según el periodo y filtros seleccionados.</p></div><div class="d-flex gap-2"><a class="btn btn-outline-danger" asp-action="Pdf" asp-route-desde="@Model.Desde.ToString("yyyy-MM-dd")" asp-route-hasta="@Model.Hasta.ToString("yyyy-MM-dd")" asp-route-metodoPago="@ViewBag.MetodoPago" asp-route-tipoComprobante="@ViewBag.TipoComprobante"><i class="bi bi-file-earmark-pdf me-1"></i> PDF</a><a class="btn btn-outline-success" asp-action="Excel" asp-route-desde="@Model.Desde.ToString("yyyy-MM-dd")" asp-route-hasta="@Model.Hasta.ToString("yyyy-MM-dd")" asp-route-metodoPago="@ViewBag.MetodoPago" asp-route-tipoComprobante="@ViewBag.TipoComprobante"><i class="bi bi-file-earmark-excel me-1"></i> Excel</a></div></div>
+
+<form method="get" class="card border-0 shadow-sm mb-4 filter-card"><div class="card-body p-4">
+    <div class="d-flex align-items-center gap-2 mb-3"><i class="bi bi-funnel-fill text-primary"></i><h6 class="fw-bold mb-0">Filtros del reporte</h6></div>
+    <div class="filter-grid">
+        <div class="filter-control"><label class="filter-label" for="desde">DESDE</label><input id="desde" name="desde" type="date" value="@Model.Desde.ToString("yyyy-MM-dd")" class="form-control" /></div>
+        <div class="filter-control"><label class="filter-label" for="hasta">HASTA</label><input id="hasta" name="hasta" type="date" value="@Model.Hasta.ToString("yyyy-MM-dd")" class="form-control" /></div>
+        <div class="filter-control filter-control-wide"><label class="filter-label" for="metodoPago">METODO DE PAGO</label><select id="metodoPago" name="metodoPago" class="form-select"><option value="">Todos los metodos</option><option value="Efectivo" selected="@(ViewBag.MetodoPago == "Efectivo")">Efectivo</option><option value="Yape" selected="@(ViewBag.MetodoPago == "Yape")">Yape</option><option value="Plin" selected="@(ViewBag.MetodoPago == "Plin")">Plin</option><option value="Tarjeta" selected="@(ViewBag.MetodoPago == "Tarjeta")">Tarjeta</option><option value="Transferencia" selected="@(ViewBag.MetodoPago == "Transferencia")">Transferencia</option></select></div>
+        <div class="filter-control"><label class="filter-label" for="tipoComprobante">COMPROBANTE</label><select id="tipoComprobante" name="tipoComprobante" class="form-select"><option value="">Todos</option><option value="Boleta" selected="@(ViewBag.TipoComprobante == "Boleta")">Boleta</option><option value="Factura" selected="@(ViewBag.TipoComprobante == "Factura")">Factura</option></select></div>
+        <div class="filter-actions"><a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-funnel-slash me-1"></i> Limpiar</a><button class="btn btn-primary" type="submit"><i class="bi bi-search me-1"></i> Aplicar</button></div>
+    </div>
+</div></form>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="stat-card"><div><small class="text-muted">OPERACIONES</small><h4 class="fw-bold mb-0">@Model.CantidadVentas</h4></div><div class="stat-icon primary"><i class="bi bi-receipt"></i></div></div></div>
+    <div class="col-md-3"><div class="stat-card"><div><small class="text-muted">TOTAL VENDIDO</small><h4 class="fw-bold mb-0">S/ @Model.TotalVentas.ToString("N2")</h4></div><div class="stat-icon success"><i class="bi bi-cash-stack"></i></div></div></div>
+    <div class="col-md-3"><div class="stat-card"><div><small class="text-muted">EFECTIVO</small><h4 class="fw-bold mb-0">S/ @Model.TotalEfectivo.ToString("N2")</h4></div><div class="stat-icon warning"><i class="bi bi-cash"></i></div></div></div>
+    <div class="col-md-3"><div class="stat-card"><div><small class="text-muted">DIGITAL</small><h4 class="fw-bold mb-0">S/ @Model.TotalDigital.ToString("N2")</h4></div><div class="stat-icon info"><i class="bi bi-credit-card"></i></div></div></div>
+</div>
+
+<div class="card border-0 shadow-sm"><div class="card-header bg-white py-3"><strong>Ultimas ventas del periodo</strong> <small class="text-muted">(@Model.Desde.ToString("dd/MM/yyyy") - @Model.Hasta.ToString("dd/MM/yyyy"))</small></div><div class="table-responsive"><table class="table table-hover mb-0"><thead class="table-light"><tr><th>Comprobante</th><th>Metodo</th><th>Total</th><th>Fecha</th></tr></thead><tbody>
+@if (Model.UltimasVentas.Any())
+{
+    foreach (var venta in Model.UltimasVentas)
+    {
+        <tr><td>@venta.NumeroComprobante</td><td>@venta.MetodoPago</td><td class="fw-bold">S/ @venta.Total.ToString("N2")</td><td>@venta.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</td></tr>
+    }
+}
+else
+{
+    <tr><td colspan="4" class="text-center text-muted py-4">No hay ventas en el periodo.</td></tr>
+}
+</tbody></table></div></div>

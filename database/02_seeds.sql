@@ -10,9 +10,9 @@ GO
 
 INSERT INTO Usuarios (IdRol, NombreCompleto, Correo, NombreUsuario, ClaveHash, Telefono, Estado)
 VALUES
-(1, 'Victor Andres Martinez Lazaro', 'admin@elcortijo.pe', 'admin', '$2a$11$w8N8XkFvdB12yF2zT9bA3OpWqLz6.l8Vv2U7fC0p9Y7D8g3N6K.ae', '987654321', 1),
-(2, 'Vendedor Principal', 'vendedor@elcortijo.pe', 'vendedor', '$2a$11$w8N8XkFvdB12yF2zT9bA3OpWqLz6.l8Vv2U7fC0p9Y7D8g3N6K.ae', '987654322', 1),
-(3, 'Almacenero Principal', 'almacen@elcortijo.pe', 'almacen', '$2a$11$w8N8XkFvdB12yF2zT9bA3OpWqLz6.l8Vv2U7fC0p9Y7D8g3N6K.ae', '987654323', 1);
+(1, 'Victor Andres Martinez Lazaro', 'admin@elcortijo.pe', 'admin', '$2b$11$/z5MmzMf6dQe9Jh6N5vxoOLeJEnRcV78H9w6Y5dZKpajyeg7zTX6y', '987654321', 1),
+(2, 'Vendedor Principal', 'vendedor@elcortijo.pe', 'vendedor', '$2b$11$/z5MmzMf6dQe9Jh6N5vxoOLeJEnRcV78H9w6Y5dZKpajyeg7zTX6y', '987654322', 1),
+(3, 'Almacenero Principal', 'almacen@elcortijo.pe', 'almacen', '$2b$11$/z5MmzMf6dQe9Jh6N5vxoOLeJEnRcV78H9w6Y5dZKpajyeg7zTX6y', '987654323', 1);
 GO
 
 INSERT INTO Categorias (Nombre, Descripcion, Estado)
