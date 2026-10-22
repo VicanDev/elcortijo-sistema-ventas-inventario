@@ -1,0 +1,43 @@
+name: CI .NET
+
+on:
+  push:
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Compilar y probar
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+      - name: Instalar .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - name: Restaurar dependencias
+        run: dotnet restore ElCortijo.sln
+      - name: Compilar solución
+        run: dotnet build ElCortijo.sln --configuration Release --no-restore
+      - name: Ejecutar pruebas de integración
+        run: >-
+          dotnet test ElCortijo.sln
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=resultados.trx"
+          --collect "XPlat Code Coverage"
+          --results-directory TestResults
+      - name: Publicar resultados de pruebas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-pruebas
+          path: TestResults/**
+          if-no-files-found: warn
+          retention-days: 14

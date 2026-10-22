@@ -16,9 +16,14 @@ public class UsuariosController : Controller
         _usuarioService = usuarioService;
     }
 
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? buscar, int? idRol, string? estado)
     {
-        var usuarios = await _usuarioService.ObtenerTodosAsync();
+        bool? estadoActivo = estado switch { "activo" => true, "inactivo" => false, _ => null };
+        var usuarios = await _usuarioService.ObtenerTodosAsync(buscar, idRol, estadoActivo);
+        ViewBag.Buscar = buscar;
+        ViewBag.IdRol = idRol;
+        ViewBag.Estado = estado;
+        ViewBag.RolesFiltro = await _usuarioService.ObtenerRolesAsync();
         return View(usuarios);
     }
 

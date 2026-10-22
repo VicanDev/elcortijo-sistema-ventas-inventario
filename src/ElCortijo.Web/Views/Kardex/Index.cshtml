@@ -1,0 +1,77 @@
+@model IEnumerable<ElCortijo.Dominio.Entidades.MovimientoInventario>
+@{
+    ViewData["Title"] = "Movimientos y Kardex";
+    var productos = ViewBag.Productos as IEnumerable<ElCortijo.Dominio.Entidades.Producto> ?? [];
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div><h2 class="fw-bold mb-1">Movimientos y Kardex</h2><p class="text-muted mb-0">Historial de movimientos ya registrados.</p></div>
+    <a asp-action="RegistrarEntrada" class="btn btn-primary">
+        <i class="bi bi-box-arrow-in-down me-1"></i> Registrar entrada
+    </a>
+</div>
+
+<form method="get" class="card border-0 shadow-sm mb-4 filter-card"><div class="card-body p-4">
+    <div class="d-flex align-items-center gap-2 mb-3"><i class="bi bi-funnel-fill text-primary"></i><h6 class="fw-bold mb-0">Filtros de busqueda</h6></div>
+    <div class="filter-grid">
+        <div class="filter-control filter-control-wide"><label class="filter-label" for="producto">PRODUCTO</label>
+            <input id="producto" name="producto" value="@ViewBag.Producto" class="form-control" list="productos-kardex" placeholder="Todos los productos o buscar..." autocomplete="off" />
+            <datalist id="productos-kardex">
+                @foreach (var producto in productos)
+                {
+                    <option value="@producto.Codigo - @producto.Nombre" data-id="@producto.IdProducto"></option>
+                }
+            </datalist>
+            <input type="hidden" id="idProducto" name="idProducto" value="@ViewBag.IdProducto" />
+        </div>
+        <div class="filter-control"><label class="filter-label" for="tipo">MOVIMIENTO</label><select id="tipo" name="tipo" class="form-select"><option value="">Todos</option><option value="Entrada" selected="@(ViewBag.Tipo == "Entrada")">Entrada</option><option value="Salida" selected="@(ViewBag.Tipo == "Salida")">Salida</option><option value="Ajuste" selected="@(ViewBag.Tipo == "Ajuste")">Ajuste</option></select></div>
+        <div class="filter-control"><label class="filter-label" for="desde">DESDE</label><input id="desde" name="desde" type="date" value="@ViewBag.Desde" class="form-control" /></div>
+        <div class="filter-control"><label class="filter-label" for="hasta">HASTA</label><input id="hasta" name="hasta" type="date" value="@ViewBag.Hasta" class="form-control" /></div>
+        <div class="filter-actions"><a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-funnel-slash me-1"></i> Limpiar</a><button class="btn btn-primary" type="submit"><i class="bi bi-search me-1"></i> Buscar</button></div>
+    </div>
+</div></form>
+
+@section Scripts {
+    <script>
+        (() => {
+            const entrada = document.getElementById('producto');
+            const id = document.getElementById('idProducto');
+            const opciones = Array.from(document.querySelectorAll('#productos-kardex option'));
+            if (!entrada || !id) return;
+
+            entrada.addEventListener('input', () => {
+                const opcion = opciones.find(item => item.value === entrada.value);
+                id.value = opcion?.dataset.id ?? '';
+            });
+
+            entrada.form?.addEventListener('reset', () => { id.value = ''; });
+        })();
+    </script>
+}
+
+<div class="card border-0 shadow-sm"><div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light"><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Stock</th><th>Motivo</th><th>Usuario</th></tr></thead>
+        <tbody>
+        @if (Model.Any())
+        {
+            foreach (var movimiento in Model)
+            {
+                <tr>
+                    <td class="small">@movimiento.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td class="fw-semibold">@movimiento.Producto.Nombre</td>
+                    <td><span class="badge @(movimiento.TipoMovimiento == "Entrada" ? "bg-success" : movimiento.TipoMovimiento == "Salida" ? "bg-danger" : "bg-warning text-dark")">@movimiento.TipoMovimiento</span></td>
+                    <td>@movimiento.Cantidad</td>
+                    <td>@movimiento.StockAnterior <i class="bi bi-arrow-right"></i> @movimiento.StockPosterior</td>
+                    <td>@movimiento.Motivo</td>
+                    <td>@movimiento.Usuario.NombreCompleto</td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr><td colspan="7" class="text-center text-muted py-4">No hay movimientos para mostrar.</td></tr>
+        }
+        </tbody>
+    </table>
+</div></div>

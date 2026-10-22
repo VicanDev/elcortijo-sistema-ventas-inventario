@@ -1,0 +1,55 @@
+openapi: 3.0.3
+info:
+  title: El Cortijo - Catálogo y disponibilidad
+  version: 1.0.0
+  description: Consulta de productos activos, precio y stock para IBM watsonx Assistant.
+servers:
+  # Reemplazar por la URL HTTPS pública donde se despliegue El Cortijo.
+  - url: https://TU-DOMINIO-PUBLICO
+paths:
+  /api/chatbot/productos:
+    get:
+      operationId: consultarProductos
+      summary: Buscar alimentos y consultar precio y stock
+      description: Busca productos por nombre o código. Usa términos concretos como Canbo o PROD-005.
+      parameters:
+        - name: buscar
+          in: query
+          required: true
+          description: Nombre, marca o código del producto que se desea consultar.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 120
+          example: Canbo
+      responses:
+        '200':
+          description: Productos que coinciden con la consulta.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  consulta:
+                    type: string
+                  encontrados:
+                    type: integer
+                  productos:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        codigo:
+                          type: string
+                        nombre:
+                          type: string
+                        precio:
+                          type: number
+                        stock:
+                          type: integer
+                        unidadMedida:
+                          type: string
+                        disponible:
+                          type: boolean
+        '400':
+          description: Falta el término de búsqueda.

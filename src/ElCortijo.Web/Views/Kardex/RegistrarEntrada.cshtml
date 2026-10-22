@@ -1,0 +1,64 @@
+﻿@model ElCortijo.Web.ViewModels.EntradaInventarioViewModel
+@{
+    ViewData["Title"] = "Registrar entrada";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Registrar entrada de mercadería</h1>
+        <p class="text-muted mb-0">Suma stock al producto y genera el movimiento en el Kardex.</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary">Volver al Kardex</a>
+</div>
+
+<form asp-action="RegistrarEntrada" method="post" class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="mb-3">
+            <label asp-for="IdProducto" class="form-label"></label>
+            <select asp-for="IdProducto" id="productoSelect" class="form-select">
+                <option value="">-- Selecciona un producto --</option>
+                @foreach (var p in ViewBag.Productos)
+                {
+                    <option value="@p.IdProducto" data-stock="@p.StockActual">
+                        @p.Codigo - @p.Nombre
+                    </option>
+                }
+            </select>
+            <span asp-validation-for="IdProducto" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Stock actual</label>
+            <input type="text" id="stockActual" class="form-control" readonly value="Selecciona un producto" />
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Cantidad" class="form-label"></label>
+            <input asp-for="Cantidad" class="form-control" type="number" min="1" />
+            <span asp-validation-for="Cantidad" class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Motivo" class="form-label"></label>
+            <input asp-for="Motivo" class="form-control" />
+            <span asp-validation-for="Motivo" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="card-footer bg-white border-0 d-flex justify-content-end gap-2">
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Registrar entrada</button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('productoSelect').addEventListener('change', function () {
+            const selected = this.options[this.selectedIndex];
+            const stock = selected.getAttribute('data-stock');
+            document.getElementById('stockActual').value = stock ? stock : 'Selecciona un producto';
+        });
+    </script>
+}

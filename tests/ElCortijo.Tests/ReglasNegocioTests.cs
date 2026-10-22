@@ -18,6 +18,7 @@ public sealed class ReglasNegocioTests
     [InlineData(" efectivo ", ClasificacionPago.Efectivo)]
     [InlineData("Yape", ClasificacionPago.Digital)]
     [InlineData("PLIN", ClasificacionPago.Digital)]
+    [InlineData("Yape/Plin", ClasificacionPago.Digital)]
     [InlineData("Tarjeta", ClasificacionPago.Digital)]
     [InlineData("Transferencia", ClasificacionPago.Digital)]
     [InlineData("Otro", ClasificacionPago.NoClasificado)]

@@ -11,7 +11,7 @@ public static class ClasificadorMetodoPago
 {
     private static readonly HashSet<string> MetodosDigitales = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Yape", "Plin", "Tarjeta", "Transferencia", "Digital"
+        "Yape", "Plin", "Yape/Plin", "Tarjeta", "Transferencia", "Digital"
     };
 
     public static ClasificacionPago Clasificar(string? metodoPago)

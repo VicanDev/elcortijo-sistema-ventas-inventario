@@ -17,9 +17,25 @@ public class UsuarioService : IUsuarioService
         _authService = authService;
     }
 
-    public async Task<IEnumerable<UsuarioDto>> ObtenerTodosAsync()
+    public async Task<IEnumerable<UsuarioDto>> ObtenerTodosAsync(string? buscar = null, int? idRol = null, bool? estado = null)
     {
-        return await _context.Usuarios
+        var consulta = _context.Usuarios.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(buscar))
+        {
+            buscar = buscar.Trim();
+            consulta = consulta.Where(u => u.NombreUsuario.Contains(buscar)
+                || u.NombreCompleto.Contains(buscar)
+                || u.Correo.Contains(buscar));
+        }
+
+        if (idRol.HasValue)
+            consulta = consulta.Where(u => u.IdRol == idRol.Value);
+
+        if (estado.HasValue)
+            consulta = consulta.Where(u => u.Estado == estado.Value);
+
+        return await consulta
             .Include(u => u.Rol)
             .OrderBy(u => u.NombreCompleto)
             .Select(u => new UsuarioDto

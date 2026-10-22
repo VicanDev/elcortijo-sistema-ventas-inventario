@@ -1,0 +1,11 @@
+@model ElCortijo.Dominio.Entidades.Cliente
+<div class="row justify-content-center"><div class="col-lg-8"><div class="card border-0 shadow-sm"><div class="card-body p-4">
+    <h4 class="fw-bold mb-4">@(Model.IdCliente == 0 ? "Registrar cliente" : "Actualizar cliente")</h4>
+    <form method="post"><input asp-for="IdCliente" type="hidden" /><div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+        <div class="row g-3"><div class="col-md-4"><label asp-for="TipoDocumento" class="form-label">Documento</label><select asp-for="TipoDocumento" class="form-select" required><option value="">Seleccione</option><option>DNI</option><option>RUC</option><option>SIN DOCUMENTO</option></select></div>
+        <div class="col-md-8"><label asp-for="NumeroDocumento" class="form-label">Número de documento</label><input asp-for="NumeroDocumento" class="form-control" inputmode="numeric" required /><span asp-validation-for="NumeroDocumento" class="text-danger small"></span></div>
+        <div class="col-12"><label asp-for="NombreRazonSocial" class="form-label">Nombre o razón social</label><input asp-for="NombreRazonSocial" class="form-control" required /><span asp-validation-for="NombreRazonSocial" class="text-danger small"></span></div>
+        <div class="col-md-6"><label asp-for="Telefono" class="form-label">Teléfono</label><input asp-for="Telefono" class="form-control" /></div><div class="col-md-6"><label asp-for="Correo" class="form-label">Correo</label><input asp-for="Correo" class="form-control" type="email" /><span asp-validation-for="Correo" class="text-danger small"></span></div>
+        <div class="col-12"><label asp-for="Direccion" class="form-label">Dirección</label><input asp-for="Direccion" class="form-control" /></div></div>
+        <div class="text-end mt-4"><a asp-action="Index" class="btn btn-outline-secondary me-2">Cancelar</a><button class="btn btn-primary"><i class="bi bi-save me-1"></i> Guardar</button></div>
+    </form></div></div></div></div>
