@@ -65,6 +65,11 @@ public class VentaService : IVentaService
         await using var transaccion = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
         try
         {
+            var arqueoAbierto = await _context.ArqueosCaja.SingleOrDefaultAsync(a =>
+                a.IdUsuario == idUsuario && a.Estado == "Abierta");
+            if (arqueoAbierto is null)
+                return (false, "Abra una caja antes de registrar ventas.", null);
+
             Cliente? cliente = null;
             var nombreManual = solicitud.NombreClienteManual?.Trim();
             if (solicitud.IdCliente > 0)
@@ -89,7 +94,7 @@ public class VentaService : IVentaService
             }
 
             var subtotal = solicitud.Items.Sum(i => productos[i.IdProducto].PrecioVenta * i.Cantidad);
-            var igv = Math.Round(subtotal * 0.18m, 2);
+            var igv = ImpuestoCalculator.CalcularIgvSobreBaseImponible(subtotal);
             var total = subtotal + igv;
             if (solicitud.MetodoPago == "Efectivo" && solicitud.MontoRecibido < total)
                 return (false, "El monto recibido no cubre el total de la venta.", null);
@@ -117,6 +122,7 @@ public class VentaService : IVentaService
                 TipoComprobante = solicitud.TipoComprobante,
                 IdCliente = cliente.IdCliente,
                 IdUsuario = idUsuario,
+                IdArqueo = arqueoAbierto.IdArqueo,
                 SubTotal = subtotal,
                 Igv = igv,
                 Total = total,

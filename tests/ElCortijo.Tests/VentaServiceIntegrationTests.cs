@@ -45,6 +45,7 @@ public sealed class VentaServiceIntegrationTests : IAsyncLifetime
         Assert.Equal(35m, venta.SubTotal);
         Assert.Equal(6.30m, venta.Igv);
         Assert.Equal(41.30m, venta.Total);
+        Assert.Equal(1, venta.IdArqueo);
         Assert.Equal(58.70m, venta.Vuelto);
         Assert.Equal(2, venta.DetalleVentas.Count);
         Assert.Equal(8, (await _context.Productos.FindAsync(1))!.StockActual);
@@ -66,6 +67,21 @@ public sealed class VentaServiceIntegrationTests : IAsyncLifetime
             });
     }
 
+    [Fact]
+    public async Task RegistrarAsync_SinCajaAbierta_RechazaVentaSinCambiarStock()
+    {
+        var caja = await _context.ArqueosCaja.SingleAsync();
+        _context.ArqueosCaja.Remove(caja);
+        await _context.SaveChangesAsync();
+
+        var resultado = await _service.RegistrarAsync(CrearSolicitud((1, 1)), 1);
+
+        Assert.False(resultado.Exito);
+        Assert.Contains("Abra una caja", resultado.Error);
+        Assert.Empty(_context.Ventas);
+        Assert.Equal(10, (await _context.Productos.FindAsync(1))!.StockActual);
+    }
+
     [Theory]
     [InlineData("Yape/Plin")]
     [InlineData("Tarjeta")]
@@ -82,6 +98,14 @@ public sealed class VentaServiceIntegrationTests : IAsyncLifetime
         var venta = await _context.Ventas.SingleAsync();
         Assert.Equal(venta.Total, venta.MontoRecibido);
         Assert.Equal(0, venta.Vuelto);
+        Assert.Equal(1, venta.IdArqueo);
+
+        var cierre = await new CajaService(_context).CerrarAsync(1, 1, 100m);
+        Assert.True(cierre.Exito);
+        var caja = await _context.ArqueosCaja.SingleAsync();
+        Assert.Equal(0m, caja.TotalVentasEfectivo);
+        Assert.Equal(venta.Total, caja.TotalVentasDigital);
+        Assert.Equal(100m, caja.TotalEsperado);
     }
 
     [Fact]
@@ -233,6 +257,13 @@ public sealed class VentaServiceIntegrationTests : IAsyncLifetime
             CrearProducto(2, "B-001", "Alimento B", 15m, 5, true, categoria.IdCategoria, marca.IdMarca),
             CrearProducto(3, "C-001", "Sin stock", 8m, 0, true, categoria.IdCategoria, marca.IdMarca),
             CrearProducto(4, "D-001", "Inactivo", 20m, 10, false, categoria.IdCategoria, marca.IdMarca));
+        _context.ArqueosCaja.Add(new ArqueoCaja
+        {
+            IdUsuario = 1,
+            MontoInicial = 100m,
+            Estado = "Abierta",
+            FechaApertura = DateTime.Now
+        });
         await _context.SaveChangesAsync();
     }
 

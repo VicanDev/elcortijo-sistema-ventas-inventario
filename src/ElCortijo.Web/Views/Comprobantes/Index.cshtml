@@ -1,31 +1,39 @@
-@model IEnumerable<ElCortijo.Dominio.Entidades.Venta>
-@{ ViewData["Title"] = "Comprobantes"; }
+@model ElCortijo.Web.ViewModels.ComprobantesIndexViewModel
+@{
+    ViewData["Title"] = "Comprobantes";
+}
 
-<div class="mb-4"><h2 class="fw-bold mb-1">Comprobantes</h2><p class="text-muted mb-0">Consulta de boletas y facturas generadas por las ventas.</p></div>
-<form method="get" class="card border-0 shadow-sm mb-4 filter-card"><div class="card-body p-4">
-    <div class="d-flex align-items-center gap-2 mb-3"><i class="bi bi-funnel-fill text-primary"></i><h6 class="fw-bold mb-0">Filtros de busqueda</h6></div>
-    <div class="filter-grid">
-        <div class="filter-control filter-control-wide"><label class="filter-label" for="buscar">BUSCAR COMPROBANTE</label><div class="input-group"><span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span><input id="buscar" name="buscar" value="@ViewBag.Buscar" class="form-control" placeholder="Numero, cliente o documento" /></div></div>
-        <div class="filter-control filter-control-small"><label class="filter-label" for="tipo">TIPO</label><select id="tipo" name="tipo" class="form-select"><option value="">Todos</option><option value="Boleta" selected="@(ViewBag.Tipo == "Boleta")">Boleta</option><option value="Factura" selected="@(ViewBag.Tipo == "Factura")">Factura</option></select></div>
-        <div class="filter-control"><label class="filter-label" for="desde">DESDE</label><input id="desde" name="desde" type="date" value="@ViewBag.Desde" class="form-control" /></div>
-        <div class="filter-control"><label class="filter-label" for="hasta">HASTA</label><input id="hasta" name="hasta" type="date" value="@ViewBag.Hasta" class="form-control" /></div>
-        <div class="filter-actions"><a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-funnel-slash me-1"></i> Limpiar</a><button class="btn btn-primary" type="submit"><i class="bi bi-search me-1"></i> Buscar</button></div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div><h2 class="fw-bold mb-1">Boletas y facturas</h2><p class="text-muted mb-0">Consulta comprobantes asociados a ventas existentes.</p></div>
+</div>
+<form method="get" asp-action="Index" class="card card-body border-0 shadow-sm mb-4">
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3"><label asp-for="Numero" class="form-label">Número</label><input asp-for="Numero" class="form-control" maxlength="20" /></div>
+        <div class="col-md-2"><label asp-for="Tipo" class="form-label">Tipo</label><select asp-for="Tipo" class="form-select"><option value="">Todos</option><option value="Boleta">Boleta</option><option value="Factura">Factura</option></select></div>
+        <div class="col-md-2"><label asp-for="Desde" class="form-label">Desde</label><input asp-for="Desde" class="form-control" /></div>
+        <div class="col-md-2"><label asp-for="Hasta" class="form-label">Hasta</label><input asp-for="Hasta" class="form-control" /><span asp-validation-for="Hasta" class="text-danger small"></span></div>
+        <div class="col-md-3 d-flex gap-2"><button class="btn btn-primary" type="submit"><i class="bi bi-search me-1"></i>Buscar</button><a asp-action="Index" class="btn btn-outline-secondary">Limpiar</a></div>
     </div>
-</div></form>
-
-<div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
-    <thead class="table-light"><tr><th>Numero</th><th>Tipo</th><th>Cliente</th><th>IGV</th><th>Total</th><th>Fecha</th><th></th></tr></thead>
-    <tbody>
-    @if (Model.Any())
-    {
-        foreach (var venta in Model)
-        {
-            <tr><td class="fw-semibold">@venta.NumeroComprobante</td><td>@venta.TipoComprobante</td><td>@venta.Cliente.NombreRazonSocial</td><td>S/ @venta.Igv.ToString("N2")</td><td class="fw-bold">S/ @venta.Total.ToString("N2")</td><td>@venta.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</td><td class="text-nowrap"><a asp-action="Detalle" asp-route-id="@venta.IdVenta" class="btn btn-sm btn-outline-primary">Ver</a> <a asp-action="Pdf" asp-route-id="@venta.IdVenta" class="btn btn-sm btn-outline-danger" title="Descargar PDF" aria-label="Descargar PDF de @venta.NumeroComprobante"><i class="bi bi-file-earmark-pdf"></i></a></td></tr>
-        }
-    }
-    else
-    {
-        <tr><td colspan="7" class="text-center text-muted py-4">No hay comprobantes registrados.</td></tr>
-    }
-    </tbody>
-</table></div></div>
+</form>
+<div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light"><tr><th>Fecha</th><th>Número</th><th>Tipo</th><th>Cliente</th><th>Estado</th><th class="text-end">Total registrado</th><th></th></tr></thead>
+            <tbody>
+                @if (Model.Comprobantes.Count == 0)
+                {
+                    <tr><td colspan="7" class="text-center text-muted py-4">No se encontraron comprobantes para los filtros indicados.</td></tr>
+                }
+                else
+                {
+                    @foreach (var item in Model.Comprobantes)
+                    {
+                        <tr><td>@item.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</td><td class="fw-semibold">@item.NumeroComprobante</td><td>@item.TipoComprobante</td><td>@(item.ClienteNombre ?? "Cliente no disponible")</td><td>@item.Estado</td><td class="text-end">S/ @item.Total.ToString("N2")</td><td class="text-end"><a asp-action="Detalle" asp-route-id="@item.IdVenta" class="btn btn-sm btn-outline-primary">Ver</a></td></tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<p class="form-text mt-2">Se muestran como máximo 500 comprobantes; usa filtros de fecha o número para acotar la consulta.</p>

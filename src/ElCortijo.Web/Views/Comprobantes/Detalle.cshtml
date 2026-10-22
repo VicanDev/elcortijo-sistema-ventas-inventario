@@ -1,19 +1,22 @@
-@model ElCortijo.Dominio.Entidades.Venta
-@{ ViewData["Title"] = "Detalle de comprobante"; }
-
-<div class="d-flex justify-content-between align-items-start mb-4">
-    <div><h2 class="fw-bold mb-1">@Model.TipoComprobante @Model.NumeroComprobante</h2><p class="text-muted mb-0">Vista preliminar del comprobante.</p></div>
-    <div class="d-flex gap-2"><a asp-action="Imprimir" asp-route-id="@Model.IdVenta" target="_blank" rel="noopener" class="btn btn-outline-secondary"><i class="bi bi-printer me-1"></i> Imprimir</a><a asp-action="Pdf" asp-route-id="@Model.IdVenta" class="btn btn-danger"><i class="bi bi-file-earmark-pdf me-1"></i> Descargar PDF</a><a asp-action="Index" class="btn btn-light">Volver</a></div>
+@model ElCortijo.Dominio.DTOs.ComprobanteDto
+@{
+    ViewData["Title"] = "Detalle del comprobante";
+}
+<div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <div><h2 class="fw-bold mb-1">@Model.TipoComprobante @Model.NumeroComprobante</h2><p class="text-muted mb-0">Datos históricos de la venta asociada.</p></div>
+    <div class="d-flex gap-2"><a asp-action="Imprimir" asp-route-id="@Model.IdVenta" class="btn btn-outline-secondary"><i class="bi bi-printer me-1"></i>Vista de impresión</a><a asp-action="Pdf" asp-route-id="@Model.IdVenta" class="btn btn-primary"><i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF</a></div>
 </div>
-
-<div class="card border-0 shadow-sm"><div class="card-body p-4">
-    <div class="row mb-4"><div class="col-md-6"><h4 class="fw-bold">El Cortijo</h4><span class="text-muted">Ventas e inventario de alimentos para mascotas</span></div><div class="col-md-6 text-md-end"><strong>Fecha:</strong> @Model.FechaRegistro.ToString("dd/MM/yyyy HH:mm")<br /><strong>Atendido por:</strong> @Model.Usuario.NombreCompleto</div></div>
-    <div class="bg-light rounded p-3 mb-3"><strong>Cliente:</strong> @Model.Cliente.NombreRazonSocial<br /><strong>@Model.Cliente.TipoDocumento:</strong> @Model.Cliente.NumeroDocumento</div>
-    <div class="table-responsive"><table class="table"><thead><tr><th>Producto</th><th class="text-end">Cantidad</th><th class="text-end">Precio</th><th class="text-end">Subtotal</th></tr></thead><tbody>
-    @foreach (var detalle in Model.DetalleVentas)
-    {
-        <tr><td>@detalle.Producto.Nombre</td><td class="text-end">@detalle.Cantidad</td><td class="text-end">S/ @detalle.PrecioUnitario.ToString("N2")</td><td class="text-end">S/ @detalle.SubTotal.ToString("N2")</td></tr>
-    }
-    </tbody></table></div>
-    <div class="row justify-content-end"><div class="col-md-4"><div class="d-flex justify-content-between"><span>Subtotal</span><strong>S/ @Model.SubTotal.ToString("N2")</strong></div><div class="d-flex justify-content-between"><span>IGV (18%)</span><strong>S/ @Model.Igv.ToString("N2")</strong></div><hr /><div class="d-flex justify-content-between fs-5"><span>Total</span><strong>S/ @Model.Total.ToString("N2")</strong></div></div></div>
-</div></div>
+<div class="card border-0 shadow-sm receipt-paper">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between"><div><h3 class="fw-bold">EL CORTIJO</h3><div class="text-muted">Representación impresa de comprobante registrado</div></div><div class="text-end"><div class="h5">@Model.TipoComprobante</div><div class="fw-bold">@Model.NumeroComprobante</div><div>@Model.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</div></div></div>
+        <hr />
+        <div class="row mb-3"><div class="col-md-6"><strong>Cliente:</strong> @(Model.ClienteNombre ?? "Datos de cliente no disponibles")<br /><strong>Documento:</strong> @(Model.ClienteTipoDocumento ?? "-") @(Model.ClienteNumeroDocumento ?? "-")<br /><strong>Dirección:</strong> @(Model.ClienteDireccion ?? "-")</div><div class="col-md-6 text-md-end"><strong>Estado:</strong> @Model.Estado<br /><strong>Pago:</strong> @Model.MetodoPago<br /><strong>Vendedor:</strong> @(Model.Vendedor ?? "-")</div></div>
+        @if (Model.Detalles.Count == 0) { <div class="alert alert-warning">La venta no tiene detalles de productos disponibles.</div> }
+        <div class="table-responsive"><table class="table"><thead><tr><th>Producto</th><th class="text-end">Cantidad</th><th class="text-end">Precio unitario</th><th class="text-end">Subtotal</th></tr></thead><tbody>
+        @foreach (var detalle in Model.Detalles) { <tr><td>@detalle.Producto</td><td class="text-end">@detalle.Cantidad</td><td class="text-end">S/ @detalle.PrecioUnitario.ToString("N2")</td><td class="text-end">S/ @detalle.SubTotal.ToString("N2")</td></tr> }
+        </tbody></table></div>
+        <div class="row justify-content-end"><div class="col-md-4"><div class="d-flex justify-content-between"><span>Subtotal registrado</span><span>S/ @Model.SubTotal.ToString("N2")</span></div><div class="d-flex justify-content-between"><span>IGV registrado (referencia 18%)</span><span>S/ @Model.Igv.ToString("N2")</span></div><hr /><div class="d-flex justify-content-between fw-bold fs-5"><span>Total registrado</span><span>S/ @Model.Total.ToString("N2")</span></div></div></div>
+        <p class="small text-muted mt-4">Se muestran los importes persistidos en la venta. Esta representación no es un comprobante electrónico validado por SUNAT.</p>
+    </div>
+</div>
+<style media="print">@@page { size: A4; margin: 15mm; } body { background: white !important; } .sidebar, .top-navbar, .no-print { display: none !important; } .main-content, .content-body { margin: 0 !important; padding: 0 !important; } .receipt-paper { box-shadow: none !important; border: 0 !important; }</style>

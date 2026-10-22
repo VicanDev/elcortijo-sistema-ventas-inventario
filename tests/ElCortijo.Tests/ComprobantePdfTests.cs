@@ -1,6 +1,7 @@
 using System.Text;
 using ElCortijo.Datos;
 using ElCortijo.Dominio.Entidades;
+using ElCortijo.Negocio.Servicios;
 using ElCortijo.Web.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
@@ -89,17 +90,17 @@ public sealed class ComprobantePdfTests
         });
         await contexto.SaveChangesAsync();
 
-        var controlador = new ComprobantesController(contexto);
+        var controlador = new ComprobantesController(
+            new ComprobanteService(contexto),
+            new ExportacionService());
         var resultado = Assert.IsType<FileContentResult>(await controlador.Pdf(venta.IdVenta));
 
         Assert.Equal("application/pdf", resultado.ContentType);
-        Assert.Equal("comprobante-B001000001.pdf", resultado.FileDownloadName);
+        Assert.Equal("B001-000001.pdf", resultado.FileDownloadName);
         Assert.StartsWith("%PDF-", Encoding.ASCII.GetString(resultado.FileContents, 0, 5));
         Assert.True(resultado.FileContents.Length > 1_000);
 
-        var impresion = Assert.IsType<FileContentResult>(await controlador.Imprimir(venta.IdVenta));
-        Assert.Equal("application/pdf", impresion.ContentType);
-        Assert.Empty(impresion.FileDownloadName);
-        Assert.StartsWith("%PDF-", Encoding.ASCII.GetString(impresion.FileContents, 0, 5));
+        var impresion = Assert.IsType<ViewResult>(await controlador.Imprimir(venta.IdVenta));
+        Assert.IsType<ElCortijo.Dominio.DTOs.ComprobanteDto>(impresion.Model);
     }
 }
